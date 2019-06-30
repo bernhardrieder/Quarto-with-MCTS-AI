@@ -10,7 +10,11 @@ UCLASS()
 class QUARTO_API AQuartoBoard : public AActor
 {
 	GENERATED_BODY()
-	
+
+protected:
+	UPROPERTY(VisibleDefaultsOnly, Category = Appearance, BlueprintReadOnly, meta = (AllowPrivateAccess = "true", DisplayName = "Mesh Component"))
+	UStaticMeshComponent* m_meshComponent = nullptr;
+
 public:	
 	// Sets default values for this actor's properties
 	AQuartoBoard();
