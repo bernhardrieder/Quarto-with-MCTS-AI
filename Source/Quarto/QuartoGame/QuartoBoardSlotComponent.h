@@ -3,26 +3,35 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Components/ActorComponent.h"
+#include "Components/CapsuleComponent.h"
 #include "QuartoBoardSlotComponent.generated.h"
 
+class AQuartoBoard;
 
-UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
-class QUARTO_API UQuartoBoardSlotComponent : public UActorComponent
+UCLASS(Blueprintable, ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
+class QUARTO_API UQuartoBoardSlotComponent : public UCapsuleComponent
 {
 	GENERATED_BODY()
 
 public:	
-	// Sets default values for this component's properties
 	UQuartoBoardSlotComponent();
+	void BeginPlay() override;
+
+	FORCEINLINE void SetOwnerBoard(AQuartoBoard* board) { m_ownerBoard = board; }
+	FORCEINLINE void SetX(int32 xSlot) { m_xSlot = xSlot; }
+	FORCEINLINE int32 GetX() const { return m_xSlot; }
+	FORCEINLINE void SetY(int32 ySlot) { m_ySlot = ySlot; }
+	FORCEINLINE int32 GetY() const { return m_ySlot; }
 
 protected:
-	// Called when the game starts
-	virtual void BeginPlay() override;
+	UFUNCTION()
+	void OnBeginCursorOver(UPrimitiveComponent* TouchedComponent);
 
-public:	
-	// Called every frame
-	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+	UFUNCTION()
+	void OnEndCursorOver(UPrimitiveComponent* TouchedComponent);
 
-		
+private:
+	int32 m_xSlot;
+	int32 m_ySlot;
+	AQuartoBoard* m_ownerBoard;
 };

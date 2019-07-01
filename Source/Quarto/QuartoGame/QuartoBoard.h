@@ -6,25 +6,34 @@
 #include "GameFramework/Actor.h"
 #include "QuartoBoard.generated.h"
 
+class UQuartoBoardSlotComponent;
+
 UCLASS()
 class QUARTO_API AQuartoBoard : public AActor
 {
 	GENERATED_BODY()
 
 protected:
+	friend class UQuartoBoardSlotComponent;
+
+protected:
 	UPROPERTY(VisibleDefaultsOnly, Category = Appearance, BlueprintReadOnly, meta = (AllowPrivateAccess = "true", DisplayName = "Mesh Component"))
 	UStaticMeshComponent* m_meshComponent = nullptr;
 
+	UPROPERTY(VisibleDefaultsOnly, Category = Appearance, BlueprintReadOnly, meta = (AllowPrivateAccess = "true", DisplayName = "Slots"))
+	TArray<UQuartoBoardSlotComponent*> m_slotComponents;
+
 public:	
-	// Sets default values for this actor's properties
 	AQuartoBoard();
+	void Tick(float DeltaTime) override;
 
 protected:
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
+	void BeginPlay() override;
 
-public:	
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
+private:
+	void OnBeginSlotCursorOver(UQuartoBoardSlotComponent* slotComponent);
+	void OnEndSlotCursorOver(UQuartoBoardSlotComponent* slotComponent);
+
+private:
 
 };
