@@ -7,6 +7,7 @@
 #include "QuartoToken.generated.h"
 
 class UMaterialInstanceDynamic;
+class UQuartoBoardSlotComponent;
 
 UENUM(BlueprintType)
 enum class EQuartoTokenColor : uint8
@@ -46,8 +47,13 @@ public:
 
 	void ShowHighlightForPlayer(bool val);
 
+	bool IsPlacedOnBoard() const { return m_bIsPlacedOnBoard; };
+	void RemoveFromBoard();
+	void PlaceOnBoard(UQuartoBoardSlotComponent* boardSlot);
+
 private:
-	bool m_bIsUsable;
+	bool m_bIsPlacedOnBoard;
 	UMaterialInstanceDynamic* m_materialInstance;
 	bool m_isHighlightedForPlayer;
+	FVector m_initialPosition;
 };

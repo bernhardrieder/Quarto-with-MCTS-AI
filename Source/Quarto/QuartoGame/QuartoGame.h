@@ -17,9 +17,10 @@ class AQuartoGame : public APawn
 
 	enum class EGameState : uint8
 	{
-		Initialization,
+		GameStart,
 		TokenSelection,
 		SlotSelection,
+		DrawEnd,
 		GameEnd
 	};
 
@@ -36,12 +37,19 @@ public:
 	void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 
 private:
+	void HandleGameStart();
+	void HandleDrawEnd();
+	void HandleGameEnd();
 	void HandleTokenSelection();
 	void HandleSlotSelection();
 
+	/** Player Input */
+	void HandlePlayerSelectInput();
 	void PickUpFocusedToken();
 	void DiscardPickedUpToken();
+	void PlaceTokenOnFocusedSlot();
 
+	/** Helper */
 	FHitResult FetchMouseCursorTargetHitResult() const;
 	AQuartoToken* FindToken(const FHitResult& hitResult) const;
 

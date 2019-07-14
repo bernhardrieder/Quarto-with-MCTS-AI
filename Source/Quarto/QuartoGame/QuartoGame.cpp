@@ -13,7 +13,7 @@
 AQuartoGame::AQuartoGame(const FObjectInitializer& ObjectInitializer)
 : Super(ObjectInitializer)
 , m_gameBoard(nullptr)
-, m_gameState(EGameState::Initialization)
+, m_gameState(EGameState::GameStart)
 , m_pickedUpToken(nullptr)
 , m_focusedToken(nullptr)
 , m_focusedSlot(nullptr)
@@ -24,7 +24,6 @@ AQuartoGame::AQuartoGame(const FObjectInitializer& ObjectInitializer)
 void AQuartoGame::BeginPlay()
 {
 	Super::BeginPlay();
-	m_gameState = EGameState::TokenSelection;
 }
 
 void AQuartoGame::Tick(float DeltaSeconds)
@@ -33,11 +32,20 @@ void AQuartoGame::Tick(float DeltaSeconds)
 
 	switch(m_gameState)
 	{
+	case EGameState::GameStart:
+		HandleGameStart();
+		break;
 	case EGameState::TokenSelection: 
 		HandleTokenSelection();
 		break;
 	case EGameState::SlotSelection: 
 		HandleSlotSelection();
+		break;
+	case EGameState::DrawEnd: 
+		HandleDrawEnd();
+		break;
+	case EGameState::GameEnd: 
+		HandleGameEnd();
 		break;
 	default:
 		break;
@@ -48,8 +56,25 @@ void AQuartoGame::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
-	PlayerInputComponent->BindAction("PickUpFocusedToken", EInputEvent::IE_Pressed, this, &AQuartoGame::PickUpFocusedToken);
-	PlayerInputComponent->BindAction("DiscardPickedUpToken", EInputEvent::IE_Pressed, this, &AQuartoGame::DiscardPickedUpToken);
+	PlayerInputComponent->BindAction("QuartoGame_PlayerSelect", EInputEvent::IE_Pressed, this, &AQuartoGame::HandlePlayerSelectInput);
+	PlayerInputComponent->BindAction("QuartoGame_PlayerAbort", EInputEvent::IE_Pressed, this, &AQuartoGame::DiscardPickedUpToken);
+}
+
+void AQuartoGame::HandleGameStart()
+{
+	//reset board and everything
+	m_gameState = EGameState::TokenSelection;
+}
+
+void AQuartoGame::HandleDrawEnd()
+{
+	//evaluate game
+	bool gameEnd = false;
+	m_gameState = gameEnd ? EGameState::GameEnd : EGameState::GameStart;
+}
+
+void AQuartoGame::HandleGameEnd()
+{
 }
 
 void AQuartoGame::HandleTokenSelection()
@@ -62,7 +87,7 @@ void AQuartoGame::HandleTokenSelection()
 		m_focusedToken = nullptr;
 	}
 
-	if (token)
+	if (token && !token->IsPlacedOnBoard())
 	{
 		m_focusedToken = token;
 		m_focusedToken->ShowHighlightForPlayer(true);
@@ -71,16 +96,39 @@ void AQuartoGame::HandleTokenSelection()
 
 void AQuartoGame::HandleSlotSelection()
 {
-	if (m_gameBoard && m_gameState == EGameState::SlotSelection)
+	if (m_pickedUpToken && m_gameBoard)
 	{
-		bool showDebug = true;
-		m_focusedSlot = m_gameBoard->FindSlot(FetchMouseCursorTargetHitResult(), showDebug);
+		bool showDebug = true; // move to imgui
+		auto slot = m_gameBoard->FindSlot(FetchMouseCursorTargetHitResult(), showDebug);
+
+		if(slot && !slot->HasPlacedToken())
+		{
+			m_focusedSlot = slot;
+			m_focusedSlot->HoverToken(m_pickedUpToken);
+		}
+	}
+}
+
+void AQuartoGame::HandlePlayerSelectInput()
+{
+	switch(m_gameState)
+	{
+	case EGameState::TokenSelection: 
+		PickUpFocusedToken();
+		break;
+	case EGameState::SlotSelection:
+		PlaceTokenOnFocusedSlot();
+		break;
+	default:
+		break;
 	}
 }
 
 void AQuartoGame::PickUpFocusedToken()
 {
-	if(!m_pickedUpToken && m_focusedToken && m_gameState == EGameState::TokenSelection)
+	if(!m_pickedUpToken 
+		&& m_focusedToken 
+		&& !m_focusedToken->IsPlacedOnBoard())
 	{
 		m_pickedUpToken = m_focusedToken;
 		m_focusedToken = nullptr;
@@ -93,11 +141,26 @@ void AQuartoGame::DiscardPickedUpToken()
 {
 	if(m_pickedUpToken)
 	{
-		m_pickedUpToken->SetActorLocation(m_pickedUpToken->GetActorLocation() - FVector::UpVector * 100.f);
-		m_pickedUpToken->ShowHighlightForPlayer(false);
+		m_pickedUpToken->RemoveFromBoard();
 		m_pickedUpToken = nullptr;
 		m_gameState = EGameState::TokenSelection;
 	}
+}
+
+void AQuartoGame::PlaceTokenOnFocusedSlot()
+{
+	if(!m_focusedSlot 
+		|| !m_pickedUpToken 
+		|| m_focusedSlot->HasPlacedToken())
+	{
+		return;
+	}
+
+	m_pickedUpToken->PlaceOnBoard(m_focusedSlot);
+	m_pickedUpToken = nullptr;
+
+	m_gameState = EGameState::DrawEnd;
+
 }
 
 FHitResult AQuartoGame::FetchMouseCursorTargetHitResult() const
@@ -112,8 +175,15 @@ FHitResult AQuartoGame::FetchMouseCursorTargetHitResult() const
 	playerController->DeprojectMousePositionToWorld(start, dir);
 	end = start + (dir * 10000.f);
 
+
+	FCollisionQueryParams queryParams = FCollisionQueryParams::DefaultQueryParam;
+	if(m_pickedUpToken)
+	{
+		queryParams.AddIgnoredActor(m_pickedUpToken);
+	}
+
 	FHitResult hitResult;
-	GetWorld()->LineTraceSingleByChannel(hitResult, start, end, ECC_Visibility);
+	GetWorld()->LineTraceSingleByChannel(hitResult, start, end, ECC_Visibility, queryParams);
 	return hitResult;
 }
 
