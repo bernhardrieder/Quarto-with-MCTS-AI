@@ -14,9 +14,6 @@ class QUARTO_API AQuartoBoard : public AActor
 	GENERATED_BODY()
 
 protected:
-	friend class UQuartoBoardSlotComponent;
-
-protected:
 	UPROPERTY(VisibleDefaultsOnly, Category = Appearance, BlueprintReadOnly, meta = (AllowPrivateAccess = "true", DisplayName = "Mesh Component"))
 	UStaticMeshComponent* m_meshComponent = nullptr;
 
@@ -27,13 +24,9 @@ public:
 	AQuartoBoard();
 	void Tick(float DeltaTime) override;
 
+	UQuartoBoardSlotComponent* TraceForSlot(const FVector& Start, const FVector& End, bool bDrawDebugHelpers) const;
+
 protected:
 	void BeginPlay() override;
-
-private:
-	void OnBeginSlotCursorOver(UQuartoBoardSlotComponent* slotComponent);
-	void OnEndSlotCursorOver(UQuartoBoardSlotComponent* slotComponent);
-
-private:
 
 };

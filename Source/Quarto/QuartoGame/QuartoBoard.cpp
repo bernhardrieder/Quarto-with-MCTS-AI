@@ -5,11 +5,10 @@
 #include "Components/StaticMeshComponent.h"
 #include "QuartoBoardSlotComponent.h"
 #include "Misc/Char.h"
+#include "DrawDebugHelpers.h"
 
-// Sets default values
 AQuartoBoard::AQuartoBoard()
 {
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
 	m_meshComponent = CreateDefaultSubobject<UStaticMeshComponent>(FName("Mesh Component"));
@@ -22,13 +21,11 @@ AQuartoBoard::AQuartoBoard()
 	for(int8 i = 0; i < 16; ++i)
 	{
 		UQuartoBoardSlotComponent* slotComponent = CreateDefaultSubobject<UQuartoBoardSlotComponent>(FName(*FString::FromInt(i)));
-		slotComponent->SetOwnerBoard(this);
 		slotComponent->SetupAttachment(RootComponent);
 		m_slotComponents.Add(slotComponent);
 	}
 }
 
-// Called when the game starts or when spawned
 void AQuartoBoard::BeginPlay()
 {
 	Super::BeginPlay();
@@ -52,20 +49,25 @@ void AQuartoBoard::BeginPlay()
 	}
 }
 
-void AQuartoBoard::OnBeginSlotCursorOver(UQuartoBoardSlotComponent* slotComponent)
-{
-	UE_LOG(LogTemp, Display, TEXT("slot x%d y%d hovered"), slotComponent->GetX(), slotComponent->GetY());
-}
-
-void AQuartoBoard::OnEndSlotCursorOver(UQuartoBoardSlotComponent* slotComponent)
-{
-	UE_LOG(LogTemp, Display, TEXT("slot x%d y%d hover end"), slotComponent->GetX(), slotComponent->GetY());
-}
-
-// Called every frame
 void AQuartoBoard::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
 }
 
+UQuartoBoardSlotComponent* AQuartoBoard::TraceForSlot(const FVector& Start, const FVector& End, bool bDrawDebugHelpers) const
+{
+	FHitResult hitResult;
+	GetWorld()->LineTraceSingleByChannel(hitResult, Start, End, ECC_Visibility);
+
+	if(hitResult.IsValidBlockingHit() && hitResult.Component.Get())
+	{
+		auto slot = Cast<UQuartoBoardSlotComponent>(hitResult.Component.Get());
+		if (slot && bDrawDebugHelpers)
+		{
+			DrawDebugSphere(GetWorld(), slot->GetComponentLocation(), 100.f, 6, FColor::Red);
+		}
+		return slot;
+	}
+
+	return nullptr;
+}
