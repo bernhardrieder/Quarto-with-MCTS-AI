@@ -6,22 +6,49 @@
 #include "GameFramework/Pawn.h"
 #include "QuartoGame.generated.h"
 
+class AQuartoBoard;
+class AQuartoToken;
+class UQuartoBoardSlotComponent;
+
 UCLASS(config=Game)
 class AQuartoGame : public APawn
 {
 	GENERATED_UCLASS_BODY()
 
+	enum class EGameState : uint8
+	{
+		Initialization,
+		TokenSelection,
+		SlotSelection,
+		GameEnd
+	};
+
+protected:
+	UPROPERTY(EditInstanceOnly, Category = "Game Components", BlueprintReadOnly, meta = (DisplayName = "Game Board"))
+	AQuartoBoard* m_gameBoard;
+
+	UPROPERTY(EditInstanceOnly, Category = "Game Components", BlueprintReadOnly, meta = (DisplayName = "Base Tokens"))
+	TArray<AQuartoToken*> m_baseTokens;
+
 public:
+	void BeginPlay() override;
+	void Tick(float DeltaSeconds) override;
+	void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 
-	virtual void Tick(float DeltaSeconds) override;
+private:
+	void HandleTokenSelection();
+	void HandleSlotSelection();
 
-	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
+	void PickUpFocusedToken();
+	void DiscardPickedUpToken();
 
-//	virtual void CalcCamera(float DeltaTime, struct FMinimalViewInfo& OutResult) override;
-//
-//protected:
-//	void OnResetVR();
-//	void TriggerClick();
-//	void TraceForBlock(const FVector& Start, const FVector& End, bool bDrawDebugHelpers);
+	FHitResult FetchMouseCursorTargetHitResult() const;
+	AQuartoToken* FindToken(const FHitResult& hitResult) const;
+
+private:
+	EGameState m_gameState;
+	AQuartoToken* m_pickedUpToken;
+	AQuartoToken* m_focusedToken;
+	UQuartoBoardSlotComponent* m_focusedSlot;
 
 };

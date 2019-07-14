@@ -25,6 +25,7 @@ public:
 	void Tick(float DeltaTime) override;
 
 	UQuartoBoardSlotComponent* TraceForSlot(const FVector& Start, const FVector& End, bool bDrawDebugHelpers) const;
+	UQuartoBoardSlotComponent* FindSlot(const FHitResult& hitResult, bool bDrawDebugHelpers) const;
 
 protected:
 	void BeginPlay() override;

@@ -59,15 +59,20 @@ UQuartoBoardSlotComponent* AQuartoBoard::TraceForSlot(const FVector& Start, cons
 	FHitResult hitResult;
 	GetWorld()->LineTraceSingleByChannel(hitResult, Start, End, ECC_Visibility);
 
-	if(hitResult.IsValidBlockingHit() && hitResult.Component.Get())
+	return FindSlot(std::move(hitResult), bDrawDebugHelpers);
+}
+
+UQuartoBoardSlotComponent* AQuartoBoard::FindSlot(const FHitResult& hitResult, bool bDrawDebugHelpers) const
+{
+	UQuartoBoardSlotComponent* slot = nullptr;
+	if (hitResult.IsValidBlockingHit() && hitResult.Component.Get())
 	{
-		auto slot = Cast<UQuartoBoardSlotComponent>(hitResult.Component.Get());
+		slot = Cast<UQuartoBoardSlotComponent>(hitResult.Component.Get());
+
 		if (slot && bDrawDebugHelpers)
 		{
 			DrawDebugSphere(GetWorld(), slot->GetComponentLocation(), 100.f, 6, FColor::Red);
 		}
-		return slot;
 	}
-
-	return nullptr;
+	return slot;
 }
