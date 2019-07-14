@@ -11,8 +11,8 @@ class UMaterialInstanceDynamic;
 UENUM(BlueprintType)
 enum class EQuartoTokenColor : uint8
 {
-	White 		UMETA(DisplayName = "White"),
-	Black 		UMETA(DisplayName = "Black")
+	Color1 		UMETA(DisplayName = "Color1"),
+	Color2 		UMETA(DisplayName = "Color2")
 };
 
 UENUM(BlueprintType)
@@ -34,27 +34,20 @@ protected:
 	UPROPERTY(VisibleDefaultsOnly, Category = Appearance, BlueprintReadOnly, meta = (AllowPrivateAccess = "true", DisplayName = "Mesh Component"))
 	UStaticMeshComponent* m_meshComponent;
 
-	UPROPERTY(EditAnywhere, Category = Properties, BlueprintReadOnly, meta = (DisplayName = "Properties"))
+	UPROPERTY(EditDefaultsOnly, Category = Properties, BlueprintReadOnly, meta = (DisplayName = "Properties"))
 	TArray<EQuartoTokenProperties> m_properties;
+
+	UPROPERTY(EditDefaultsOnly, Category = Properties, BlueprintReadOnly, meta = (DisplayName = "Color"))
+	EQuartoTokenColor m_color;
 
 public:	
 	AQuartoToken();
-
-	void Tick(float DeltaTime) override;
-
-	UFUNCTION()
-	void OnLeftMouseButtonClickedOnMesh(UPrimitiveComponent* ClickedComp, FKey ButtonClicked);
-	
-	UFUNCTION()
-	void OnLeftMouseButtonReleasedOnMesh(UPrimitiveComponent* ClickedComp, FKey ButtonReleased);
-
-	void SetColor(EQuartoTokenColor color);
-
-protected:
 	void BeginPlay() override;
 
+	void ShowHighlightForPlayer(bool val);
+
 private:
-	EQuartoTokenColor m_color;
 	bool m_bIsUsable;
 	UMaterialInstanceDynamic* m_materialInstance;
+	bool m_isHighlightedForPlayer;
 };
