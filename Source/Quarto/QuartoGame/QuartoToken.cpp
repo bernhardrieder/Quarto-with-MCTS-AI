@@ -8,10 +8,11 @@
 
 AQuartoToken::AQuartoToken()
 : m_meshComponent(nullptr)
-, m_bIsPlacedOnBoard(false)
 , m_materialInstance(nullptr)
-, m_isHighlightedForPlayer(false)
 , m_initialPosition(FVector::ZeroVector)
+, m_bIsPlacedOnBoard(false)
+, m_bIsHighlightedForPlayer(false)
+, m_bIsHovering(false)
 {
 	PrimaryActorTick.bCanEverTick = false;
 
@@ -33,27 +34,42 @@ void AQuartoToken::BeginPlay()
 	m_initialPosition = GetActorLocation();
 }
 
+void AQuartoToken::Reset()
+{
+	SetIsPlacedOnBoard(false);
+	StopHover();
+	SetActorLocation(m_initialPosition);
+	Super::Reset();
+}
+
 void AQuartoToken::ShowHighlightForPlayer(bool val)
 {
-	if (!m_materialInstance || m_isHighlightedForPlayer == val)
+	if (!m_materialInstance || m_bIsHighlightedForPlayer == val)
 	{
 		return;
 	}
 
-	m_isHighlightedForPlayer = val;
+	m_bIsHighlightedForPlayer = val;
 	m_materialInstance->SetScalarParameterValue("HighlightStrength", val ? 1.f : 0.f);
 }
 
-void AQuartoToken::RemoveFromBoard()
+void AQuartoToken::SetIsPlacedOnBoard(bool isPlacedOnBoard)
 {
-	m_bIsPlacedOnBoard = false;
+	m_bIsPlacedOnBoard = isPlacedOnBoard;
 	ShowHighlightForPlayer(false);
-	SetActorLocation(m_initialPosition);
 }
 
-void AQuartoToken::PlaceOnBoard(UQuartoBoardSlotComponent* boardSlot)
+void AQuartoToken::StartHoverOver(const FVector& location)
 {
-	m_bIsPlacedOnBoard = true;
-	ShowHighlightForPlayer(false);
-	boardSlot->PlaceToken(this);
+	SetActorLocation(location + FVector::UpVector * 100.f);
+	m_bIsHovering = true;
+}
+
+void AQuartoToken::StopHover()
+{
+	if(m_bIsHovering)
+	{
+		SetActorLocation(GetActorLocation() - FVector::UpVector * 100.f);
+		m_bIsHovering = false;
+	}
 }

@@ -7,7 +7,7 @@
 UQuartoBoardSlotComponent::UQuartoBoardSlotComponent()
 : m_xSlot(0)
 , m_ySlot(0)
-, m_placedToken(nullptr)
+, m_isFree(true)
 {
 	PrimaryComponentTick.bCanEverTick = false;
 
@@ -21,21 +21,4 @@ UQuartoBoardSlotComponent::UQuartoBoardSlotComponent()
 #if UE_EDITOR
 	bHiddenInGame = false;
 #endif
-}
-
-void UQuartoBoardSlotComponent::PlaceToken(AQuartoToken* token)
-{
-	m_placedToken = token;
-	m_placedToken->SetActorLocation(this->GetComponentLocation());
-}
-
-void UQuartoBoardSlotComponent::ReleasePlacedToken()
-{
-	m_placedToken->RemoveFromBoard();
-	m_placedToken = nullptr;
-}
-
-void UQuartoBoardSlotComponent::HoverToken(AQuartoToken* token)
-{
-	token->SetActorLocation(this->GetComponentLocation() + FVector::UpVector * 100.f);
 }

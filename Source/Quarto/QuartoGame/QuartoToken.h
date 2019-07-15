@@ -8,6 +8,7 @@
 
 class UMaterialInstanceDynamic;
 class UQuartoBoardSlotComponent;
+class AQuartoGame;
 
 UENUM(BlueprintType)
 enum class EQuartoTokenColor : uint8
@@ -31,6 +32,8 @@ class QUARTO_API AQuartoToken : public AActor
 {
 	GENERATED_BODY()
 
+	friend class AQuartoGame;
+
 protected:
 	UPROPERTY(VisibleDefaultsOnly, Category = Appearance, BlueprintReadOnly, meta = (AllowPrivateAccess = "true", DisplayName = "Mesh Component"))
 	UStaticMeshComponent* m_meshComponent;
@@ -43,17 +46,25 @@ protected:
 
 public:	
 	AQuartoToken();
+	void Reset() override;
+
+protected:
 	void BeginPlay() override;
 
+public:
 	void ShowHighlightForPlayer(bool val);
 
+	void SetIsPlacedOnBoard(bool isPlacedOnBoard);
 	bool IsPlacedOnBoard() const { return m_bIsPlacedOnBoard; };
-	void RemoveFromBoard();
-	void PlaceOnBoard(UQuartoBoardSlotComponent* boardSlot);
+	
+	void StartHoverOver(const FVector& location);
+	void StopHover();
 
 private:
-	bool m_bIsPlacedOnBoard;
+	AQuartoGame* m_ownerGame;
 	UMaterialInstanceDynamic* m_materialInstance;
-	bool m_isHighlightedForPlayer;
 	FVector m_initialPosition;
+	bool m_bIsPlacedOnBoard;
+	bool m_bIsHighlightedForPlayer;
+	bool m_bIsHovering;
 };

@@ -16,7 +16,6 @@ AQuartoGame::AQuartoGame(const FObjectInitializer& ObjectInitializer)
 , m_gameState(EGameState::GameStart)
 , m_pickedUpToken(nullptr)
 , m_focusedToken(nullptr)
-, m_focusedSlot(nullptr)
 {
 	AutoPossessPlayer = EAutoReceiveInput::Player0;
 }
@@ -24,6 +23,20 @@ AQuartoGame::AQuartoGame(const FObjectInitializer& ObjectInitializer)
 void AQuartoGame::BeginPlay()
 {
 	Super::BeginPlay();
+
+	for (AQuartoToken* token : m_gameTokens)
+	{
+		token->m_ownerGame = this;
+	}
+
+	if(m_gameBoard)
+	{
+		m_gameBoard->m_ownerGame = this;
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("ERROR: No gameboard assigned to AQuartoGame %s"), *GetName());
+	}
 }
 
 void AQuartoGame::Tick(float DeltaSeconds)
@@ -62,19 +75,33 @@ void AQuartoGame::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 
 void AQuartoGame::HandleGameStart()
 {
-	//reset board and everything
+	//reset board and everything else
+	m_gameBoard->Reset();
+	for(AQuartoToken* token : m_gameTokens)
+	{
+		if(token)
+		{
+			token->Reset();
+		}
+	}
 	m_gameState = EGameState::TokenSelection;
 }
 
 void AQuartoGame::HandleDrawEnd()
 {
 	//evaluate game
-	bool gameEnd = false;
-	m_gameState = gameEnd ? EGameState::GameEnd : EGameState::GameStart;
+	bool gameEnd = true;
+	for(AQuartoToken* token : m_gameTokens)
+	{
+		gameEnd &= token->IsPlacedOnBoard();
+	}
+
+	m_gameState = gameEnd ? EGameState::GameEnd : EGameState::TokenSelection;
 }
 
 void AQuartoGame::HandleGameEnd()
 {
+	m_gameState = EGameState::GameStart;
 }
 
 void AQuartoGame::HandleTokenSelection()
@@ -96,16 +123,11 @@ void AQuartoGame::HandleTokenSelection()
 
 void AQuartoGame::HandleSlotSelection()
 {
-	if (m_pickedUpToken && m_gameBoard)
+	bool showDebug = true; // todo: move to imgui
+	if (m_pickedUpToken && m_gameBoard 
+		&& m_gameBoard->CanFindFreeSlot(FetchMouseCursorTargetHitResult(), showDebug))
 	{
-		bool showDebug = true; // move to imgui
-		auto slot = m_gameBoard->FindSlot(FetchMouseCursorTargetHitResult(), showDebug);
-
-		if(slot && !slot->HasPlacedToken())
-		{
-			m_focusedSlot = slot;
-			m_focusedSlot->HoverToken(m_pickedUpToken);
-		}
+		m_gameBoard->HoverTokenOverLastFoundFreeSlot(m_pickedUpToken);
 	}
 }
 
@@ -132,7 +154,7 @@ void AQuartoGame::PickUpFocusedToken()
 	{
 		m_pickedUpToken = m_focusedToken;
 		m_focusedToken = nullptr;
-		m_pickedUpToken->SetActorLocation(m_pickedUpToken->GetActorLocation() + FVector::UpVector * 100.f);
+		m_pickedUpToken->StartHoverOver(m_pickedUpToken->GetActorLocation());
 		m_gameState = EGameState::SlotSelection;
 	}
 }
@@ -141,7 +163,7 @@ void AQuartoGame::DiscardPickedUpToken()
 {
 	if(m_pickedUpToken)
 	{
-		m_pickedUpToken->RemoveFromBoard();
+		m_pickedUpToken->Reset();
 		m_pickedUpToken = nullptr;
 		m_gameState = EGameState::TokenSelection;
 	}
@@ -149,18 +171,14 @@ void AQuartoGame::DiscardPickedUpToken()
 
 void AQuartoGame::PlaceTokenOnFocusedSlot()
 {
-	if(!m_focusedSlot 
-		|| !m_pickedUpToken 
-		|| m_focusedSlot->HasPlacedToken())
+	if (m_pickedUpToken && m_gameBoard
+		&& m_gameBoard->CanFindFreeSlot(FetchMouseCursorTargetHitResult(), false))
 	{
-		return;
+		m_gameBoard->PlaceTokenOnLastFoundFreeSlot(m_pickedUpToken);
+		m_pickedUpToken = nullptr;
+
+		m_gameState = EGameState::DrawEnd;
 	}
-
-	m_pickedUpToken->PlaceOnBoard(m_focusedSlot);
-	m_pickedUpToken = nullptr;
-
-	m_gameState = EGameState::DrawEnd;
-
 }
 
 FHitResult AQuartoGame::FetchMouseCursorTargetHitResult() const
@@ -177,7 +195,7 @@ FHitResult AQuartoGame::FetchMouseCursorTargetHitResult() const
 
 
 	FCollisionQueryParams queryParams = FCollisionQueryParams::DefaultQueryParam;
-	if(m_pickedUpToken)
+	if(m_gameState == EGameState::SlotSelection)
 	{
 		queryParams.AddIgnoredActor(m_pickedUpToken);
 	}
@@ -195,12 +213,3 @@ AQuartoToken* AQuartoGame::FindToken(const FHitResult& hitResult) const
 	}
 	return nullptr;
 }
-
-//
-//void AQuartoGame::TriggerClick()
-//{
-//	if (CurrentBlockFocus)
-//	{
-//		CurrentBlockFocus->HandleClicked();
-//	}
-//}

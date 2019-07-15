@@ -8,6 +8,7 @@
 #include "DrawDebugHelpers.h"
 
 AQuartoBoard::AQuartoBoard()
+: m_lastFoundFreeSlot(nullptr)
 {
 	PrimaryActorTick.bCanEverTick = true;
 
@@ -54,15 +55,28 @@ void AQuartoBoard::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 }
 
-UQuartoBoardSlotComponent* AQuartoBoard::TraceForSlot(const FVector& Start, const FVector& End, bool bDrawDebugHelpers) const
+void AQuartoBoard::Reset()
 {
-	FHitResult hitResult;
-	GetWorld()->LineTraceSingleByChannel(hitResult, Start, End, ECC_Visibility);
-
-	return FindSlot(std::move(hitResult), bDrawDebugHelpers);
+	for(UQuartoBoardSlotComponent* slot : m_slotComponents)
+	{
+		if(slot)
+		{
+			slot->SetIsFree(true);
+		}
+	}
+	for(AQuartoToken* token : m_tokensOnBoardGrid)
+	{
+		if(token)
+		{
+			token->Reset();
+		}
+		token = nullptr;
+	}
+	m_lastFoundFreeSlot = nullptr;
+	Super::Reset();
 }
 
-UQuartoBoardSlotComponent* AQuartoBoard::FindSlot(const FHitResult& hitResult, bool bDrawDebugHelpers) const
+bool AQuartoBoard::CanFindFreeSlot(const FHitResult& hitResult, bool bDrawDebugHelpers)
 {
 	UQuartoBoardSlotComponent* slot = nullptr;
 	if (hitResult.IsValidBlockingHit() && hitResult.Component.Get())
@@ -74,5 +88,39 @@ UQuartoBoardSlotComponent* AQuartoBoard::FindSlot(const FHitResult& hitResult, b
 			DrawDebugSphere(GetWorld(), slot->GetComponentLocation(), 100.f, 6, FColor::Red);
 		}
 	}
-	return slot;
+
+	if (slot && slot->IsFree())
+	{
+		m_lastFoundFreeSlot = slot;
+		return true;
+	}
+
+	return false;
+}
+
+void AQuartoBoard::HoverTokenOverLastFoundFreeSlot(AQuartoToken* token)
+{
+	if(!m_lastFoundFreeSlot || !token)
+	{
+		return;
+	}
+
+	token->StartHoverOver(m_lastFoundFreeSlot->GetComponentLocation());
+}
+
+void AQuartoBoard::PlaceTokenOnLastFoundFreeSlot(AQuartoToken* token)
+{
+	if(!token || !m_lastFoundFreeSlot || !m_lastFoundFreeSlot->IsFree())
+	{
+		return;
+	}
+
+	token->SetIsPlacedOnBoard(true);
+	token->SetActorLocation(m_lastFoundFreeSlot->GetComponentLocation());
+	m_lastFoundFreeSlot->SetIsFree(false);
+	
+
+	int32 x = m_lastFoundFreeSlot->GetX();
+	int32 y = m_lastFoundFreeSlot->GetY();
+	m_tokensOnBoardGrid[y * 4 + x] = token;
 }

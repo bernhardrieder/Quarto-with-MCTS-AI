@@ -29,12 +29,14 @@ protected:
 	AQuartoBoard* m_gameBoard;
 
 	UPROPERTY(EditInstanceOnly, Category = "Game Components", BlueprintReadOnly, meta = (DisplayName = "Base Tokens"))
-	TArray<AQuartoToken*> m_baseTokens;
+	TArray<AQuartoToken*> m_gameTokens;
 
 public:
-	void BeginPlay() override;
 	void Tick(float DeltaSeconds) override;
 	void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
+
+protected:
+	void BeginPlay() override;
 
 private:
 	void HandleGameStart();
@@ -57,6 +59,4 @@ private:
 	EGameState m_gameState;
 	AQuartoToken* m_pickedUpToken;
 	AQuartoToken* m_focusedToken;
-	UQuartoBoardSlotComponent* m_focusedSlot;
-
 };

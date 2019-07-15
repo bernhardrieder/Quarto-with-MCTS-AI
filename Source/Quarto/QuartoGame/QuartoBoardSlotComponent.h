@@ -22,14 +22,11 @@ public:
 	FORCEINLINE void SetY(int32 ySlot) { m_ySlot = ySlot; }
 	FORCEINLINE int32 GetY() const { return m_ySlot; }
 
-	void PlaceToken(AQuartoToken* token);
-	AQuartoToken* GetPlacedToken() const { return m_placedToken; }
-	bool HasPlacedToken() const { return !!m_placedToken; }
-	void ReleasePlacedToken();
-	void HoverToken(AQuartoToken* token);
+	void SetIsFree(bool isFree) { m_isFree = isFree; }
+	bool IsFree() const { return m_isFree; }
 
 private:
 	int32 m_xSlot;
 	int32 m_ySlot;
-	AQuartoToken* m_placedToken;
+	bool m_isFree;
 };
