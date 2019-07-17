@@ -34,6 +34,9 @@ public:
 	void HoverTokenOverLastFoundFreeSlot(AQuartoToken* token);
 	void PlaceTokenOnLastFoundFreeSlot(AQuartoToken* token);
 
+	TArray<AQuartoToken*> GetTokensOnBoardGrid() const { return TArray<AQuartoToken*>(m_tokensOnBoardGrid, 16); }
+	int32 GetNumberOfFreeSlots() const;
+
 protected:
 	void BeginPlay() override;
 

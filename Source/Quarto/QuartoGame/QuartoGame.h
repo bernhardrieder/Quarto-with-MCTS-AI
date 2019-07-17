@@ -45,6 +45,9 @@ private:
 	void HandleTokenSelection();
 	void HandleSlotSelection();
 
+	/** Game Specifics */
+	bool IsWinConditionMet() const;
+
 	/** Player Input */
 	void HandlePlayerSelectInput();
 	void PickUpFocusedToken();

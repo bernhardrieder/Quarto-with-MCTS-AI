@@ -10,6 +10,7 @@ AQuartoToken::AQuartoToken()
 : m_meshComponent(nullptr)
 , m_materialInstance(nullptr)
 , m_initialPosition(FVector::ZeroVector)
+, m_propertiesArrayAsBitmask(0)
 , m_bIsPlacedOnBoard(false)
 , m_bIsHighlightedForPlayer(false)
 , m_bIsHovering(false)
@@ -32,6 +33,11 @@ void AQuartoToken::BeginPlay()
 	m_materialInstance = UMaterialInstanceDynamic::Create(m_meshComponent->GetMaterial(0), m_meshComponent);
 	m_meshComponent->SetMaterial(0, m_materialInstance);
 	m_initialPosition = GetActorLocation();
+
+	for (EQuartoTokenProperties property : m_properties)
+	{
+		m_propertiesArrayAsBitmask |= static_cast<int32>(property);
+	}
 }
 
 void AQuartoToken::Reset()
@@ -72,4 +78,9 @@ void AQuartoToken::StopHover()
 		SetActorLocation(GetActorLocation() - FVector::UpVector * 100.f);
 		m_bIsHovering = false;
 	}
+}
+
+bool AQuartoToken::HasAtLeastOneMatchingProperty(AQuartoToken* other) const
+{
+	return (this->m_propertiesArrayAsBitmask & other->m_propertiesArrayAsBitmask) > 0;
 }

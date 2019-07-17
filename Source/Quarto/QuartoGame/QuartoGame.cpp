@@ -90,17 +90,20 @@ void AQuartoGame::HandleGameStart()
 void AQuartoGame::HandleDrawEnd()
 {
 	//evaluate game
-	bool gameEnd = true;
-	for(AQuartoToken* token : m_gameTokens)
+	bool isGameWon = IsWinConditionMet();
+	bool canContinuePlaying = m_gameBoard && m_gameBoard->GetNumberOfFreeSlots() > 0;
+
+	if(isGameWon)
 	{
-		gameEnd &= token->IsPlacedOnBoard();
+		//broadcast event
 	}
 
-	m_gameState = gameEnd ? EGameState::GameEnd : EGameState::TokenSelection;
+	m_gameState = isGameWon || !canContinuePlaying ? EGameState::GameEnd : EGameState::TokenSelection;
 }
 
 void AQuartoGame::HandleGameEnd()
 {
+	//broadcast event
 	m_gameState = EGameState::GameStart;
 }
 
@@ -129,6 +132,68 @@ void AQuartoGame::HandleSlotSelection()
 	{
 		m_gameBoard->HoverTokenOverLastFoundFreeSlot(m_pickedUpToken);
 	}
+}
+
+bool AQuartoGame::IsWinConditionMet() const
+{
+	if(!m_gameBoard)
+	{
+		return false;
+	}
+
+	TArray<AQuartoToken*> tokensOnBoard = m_gameBoard->GetTokensOnBoardGrid();
+
+	static int32 winConstellations[10][4] =
+	{
+		//vertical
+		{0,4,8,12},
+		{1,5,9,13},
+		{2,6,10,14},
+		{3,7,11,15},
+
+		//horizontal
+		{0,1,2,3},
+		{4,5,6,7},
+		{8,9,10,11},
+		{12,13,14,15},
+
+		//diagonal
+		{0,5,10,15},
+		{12,9,6,3}
+	};
+
+	for(int32 y = 0; y < 10; ++y)
+	{
+		int32* indices = winConstellations[y];
+
+		if(!tokensOnBoard[indices[0]] 
+			|| !tokensOnBoard[indices[1]]
+			|| !tokensOnBoard[indices[2]]
+			|| !tokensOnBoard[indices[3]])
+		{
+			continue;
+		}
+
+		int32 matchingPropertiesMask =
+			tokensOnBoard[indices[0]]->GetPropertiesArrayAsBitMask() &
+			tokensOnBoard[indices[1]]->GetPropertiesArrayAsBitMask() &
+			tokensOnBoard[indices[2]]->GetPropertiesArrayAsBitMask() &
+			tokensOnBoard[indices[3]]->GetPropertiesArrayAsBitMask();
+
+		int32 matchingColor =
+			tokensOnBoard[indices[0]]->GetColorAsBitMask() &
+			tokensOnBoard[indices[1]]->GetColorAsBitMask() &
+			tokensOnBoard[indices[2]]->GetColorAsBitMask() &
+			tokensOnBoard[indices[3]]->GetColorAsBitMask();
+
+		//see EQuartoTokenColor && EQuartoTokenProperties that no value starts at 0
+		if(matchingPropertiesMask > 0 || matchingColor > 0)
+		{
+			return true;
+		}
+	}
+
+	return false;
 }
 
 void AQuartoGame::HandlePlayerSelectInput()

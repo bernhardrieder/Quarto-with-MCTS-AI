@@ -27,6 +27,19 @@ AQuartoBoard::AQuartoBoard()
 	}
 }
 
+int32 AQuartoBoard::GetNumberOfFreeSlots() const
+{
+	int32 numOfFreeSlots = 0;
+	for(auto slot : m_slotComponents)
+	{
+		if(slot->IsFree())
+		{
+			++numOfFreeSlots;
+		}
+	}
+	return numOfFreeSlots;
+}
+
 void AQuartoBoard::BeginPlay()
 {
 	Super::BeginPlay();
@@ -64,13 +77,9 @@ void AQuartoBoard::Reset()
 			slot->SetIsFree(true);
 		}
 	}
-	for(AQuartoToken* token : m_tokensOnBoardGrid)
+	for(int32 i = 0; i < 16; ++i)
 	{
-		if(token)
-		{
-			token->Reset();
-		}
-		token = nullptr;
+		m_tokensOnBoardGrid[i] = nullptr;
 	}
 	m_lastFoundFreeSlot = nullptr;
 	Super::Reset();
