@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
+#include "Common/UnrealCommon.h"
 #include "GameFramework/Actor.h"
 #include "QuartoToken.generated.h"
 
@@ -11,14 +11,14 @@ class UQuartoBoardSlotComponent;
 class AQuartoGame;
 
 UENUM(BlueprintType)
-enum class EQuartoTokenColor : uint8
+enum class EQuartoTokenColor : uint8 /*brU8 -> UE header tool doesn't like it*/
 {
 	Color1 = 0x01 	UMETA(DisplayName = "Color1"),
 	Color2 = 0x02	UMETA(DisplayName = "Color2")
 };
 
 UENUM(BlueprintType)
-enum class EQuartoTokenProperties : uint8
+enum class EQuartoTokenProperties : uint8 /*brU8 -> UE header tool doesn't like it*/
 {
 	Quadratic	= 0x01	UMETA(DisplayName = "Quadratic"),
 	Round		= 0x02 	UMETA(DisplayName = "Round"),
@@ -52,27 +52,27 @@ protected:
 	void BeginPlay() override;
 
 public:
-	void ShowHighlightForPlayer(bool val);
+	void ShowHighlightForPlayer(brBool val);
 
-	void SetIsPlacedOnBoard(bool isPlacedOnBoard);
-	bool IsPlacedOnBoard() const { return m_bIsPlacedOnBoard; };
+	void SetIsPlacedOnBoard(brBool isPlacedOnBoard);
+	brBool IsPlacedOnBoard() const { return m_bIsPlacedOnBoard; };
 	
 	void StartHoverOver(const FVector& location);
 	void StopHover();
 
 	TArray<EQuartoTokenProperties> GetProperties() const { return m_properties; }
 	bool HasAtLeastOneMatchingProperty(AQuartoToken* other) const;
-	int32 GetPropertiesArrayAsBitMask() const { return m_propertiesArrayAsBitmask; }
+	brS32 GetPropertiesArrayAsBitMask() const { return m_propertiesArrayAsBitmask; }
 
 	EQuartoTokenColor GetColor() const { return m_color; }
-	int32 GetColorAsBitMask() const { return static_cast<int32>(m_color); }
+	brS32 GetColorAsBitMask() const { return static_cast<brS32>(m_color); }
 
 private:
 	AQuartoGame* m_ownerGame;
 	UMaterialInstanceDynamic* m_materialInstance;
 	FVector m_initialPosition;
-	int32 m_propertiesArrayAsBitmask;
-	bool m_bIsPlacedOnBoard;
-	bool m_bIsHighlightedForPlayer;
-	bool m_bIsHovering;
+	brS32 m_propertiesArrayAsBitmask;
+	brBool m_bIsPlacedOnBoard;
+	brBool m_bIsHighlightedForPlayer;
+	brBool m_bIsHovering;
 };

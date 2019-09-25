@@ -36,7 +36,7 @@ void AQuartoToken::BeginPlay()
 
 	for (EQuartoTokenProperties property : m_properties)
 	{
-		m_propertiesArrayAsBitmask |= static_cast<int32>(property);
+		m_propertiesArrayAsBitmask |= static_cast<brS32>(property);
 	}
 }
 
@@ -48,7 +48,7 @@ void AQuartoToken::Reset()
 	Super::Reset();
 }
 
-void AQuartoToken::ShowHighlightForPlayer(bool val)
+void AQuartoToken::ShowHighlightForPlayer(brBool val)
 {
 	if (!m_materialInstance || m_bIsHighlightedForPlayer == val)
 	{
@@ -59,7 +59,7 @@ void AQuartoToken::ShowHighlightForPlayer(bool val)
 	m_materialInstance->SetScalarParameterValue("HighlightStrength", val ? 1.f : 0.f);
 }
 
-void AQuartoToken::SetIsPlacedOnBoard(bool isPlacedOnBoard)
+void AQuartoToken::SetIsPlacedOnBoard(brBool isPlacedOnBoard)
 {
 	m_bIsPlacedOnBoard = isPlacedOnBoard;
 	ShowHighlightForPlayer(false);
@@ -80,7 +80,7 @@ void AQuartoToken::StopHover()
 	}
 }
 
-bool AQuartoToken::HasAtLeastOneMatchingProperty(AQuartoToken* other) const
+brBool AQuartoToken::HasAtLeastOneMatchingProperty(AQuartoToken* other) const
 {
 	return (this->m_propertiesArrayAsBitmask & other->m_propertiesArrayAsBitmask) > 0;
 }

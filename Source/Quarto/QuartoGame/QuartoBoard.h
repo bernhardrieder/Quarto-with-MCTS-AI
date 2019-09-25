@@ -2,11 +2,11 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
+#include "Common/UnrealCommon.h"
 #include "GameFramework/Actor.h"
-#include "QuartoToken.h"
 #include "QuartoBoard.generated.h"
 
+class AQuartoToken;
 class UQuartoBoardSlotComponent;
 class AQuartoGame;
 
@@ -29,13 +29,13 @@ public:
 	void Tick(float DeltaTime) override;
 	void Reset() override;
 
-	bool CanFindFreeSlot(const FHitResult& hitResult, bool bDrawDebugHelpers);
+	bool CanFindFreeSlot(const FHitResult& hitResult, brBool bDrawDebugHelpers);
 	UQuartoBoardSlotComponent* GetLastFoundFreeSlot() const { return m_lastFoundFreeSlot; }
 	void HoverTokenOverLastFoundFreeSlot(AQuartoToken* token);
 	void PlaceTokenOnLastFoundFreeSlot(AQuartoToken* token);
 
 	TArray<AQuartoToken*> GetTokensOnBoardGrid() const { return TArray<AQuartoToken*>(m_tokensOnBoardGrid, 16); }
-	int32 GetNumberOfFreeSlots() const;
+	brS32 GetNumberOfFreeSlots() const;
 
 protected:
 	void BeginPlay() override;

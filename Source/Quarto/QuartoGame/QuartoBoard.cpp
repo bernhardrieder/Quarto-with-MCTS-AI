@@ -6,6 +6,7 @@
 #include "QuartoBoardSlotComponent.h"
 #include "Misc/Char.h"
 #include "DrawDebugHelpers.h"
+#include "QuartoToken.h"
 
 AQuartoBoard::AQuartoBoard()
 : m_lastFoundFreeSlot(nullptr)
@@ -19,7 +20,7 @@ AQuartoBoard::AQuartoBoard()
 	m_meshComponent->SetCollisionProfileName("BlockAllDynamic");
 	SetRootComponent(m_meshComponent);
 
-	for(int8 i = 0; i < 16; ++i)
+	for(brU8 i = 0; i < 16; ++i)
 	{
 		UQuartoBoardSlotComponent* slotComponent = CreateDefaultSubobject<UQuartoBoardSlotComponent>(FName(*FString::FromInt(i)));
 		slotComponent->SetupAttachment(RootComponent);
@@ -27,9 +28,9 @@ AQuartoBoard::AQuartoBoard()
 	}
 }
 
-int32 AQuartoBoard::GetNumberOfFreeSlots() const
+brS32 AQuartoBoard::GetNumberOfFreeSlots() const
 {
-	int32 numOfFreeSlots = 0;
+	brS32 numOfFreeSlots = 0;
 	for(auto slot : m_slotComponents)
 	{
 		if(slot->IsFree())
@@ -47,7 +48,7 @@ void AQuartoBoard::BeginPlay()
 	TArray<FName> socketNames = m_meshComponent->GetAllSocketNames();
 	if(socketNames.Num() == m_slotComponents.Num())
 	{
-		for (int32 i = 0; i < 16; ++i)
+		for (brS32 i = 0; i < 16; ++i)
 		{
 			m_slotComponents[i]->AttachToComponent(RootComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale, socketNames[i]);
 
@@ -77,7 +78,7 @@ void AQuartoBoard::Reset()
 			slot->SetIsFree(true);
 		}
 	}
-	for(int32 i = 0; i < 16; ++i)
+	for(brS32 i = 0; i < 16; ++i)
 	{
 		m_tokensOnBoardGrid[i] = nullptr;
 	}
@@ -85,16 +86,21 @@ void AQuartoBoard::Reset()
 	Super::Reset();
 }
 
-bool AQuartoBoard::CanFindFreeSlot(const FHitResult& hitResult, bool bDrawDebugHelpers)
+bool AQuartoBoard::CanFindFreeSlot(const FHitResult& hitResult, brBool bDrawDebugHelpers)
 {
 	UQuartoBoardSlotComponent* slot = nullptr;
 	if (hitResult.IsValidBlockingHit() && hitResult.Component.Get())
-	{
+	{	
 		slot = Cast<UQuartoBoardSlotComponent>(hitResult.Component.Get());
 
-		if (slot && bDrawDebugHelpers)
+		if (bDrawDebugHelpers)
 		{
-			DrawDebugSphere(GetWorld(), slot->GetComponentLocation(), 100.f, 6, FColor::Red);
+			DrawDebugSphere(GetWorld(), hitResult.ImpactPoint, 100.f, 6, FColor::Orange);
+
+			if(slot)
+			{
+				DrawDebugSphere(GetWorld(), slot->GetComponentLocation(), 100.f, 6, FColor::Red);
+			}
 		}
 	}
 

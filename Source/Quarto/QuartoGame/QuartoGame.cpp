@@ -90,8 +90,8 @@ void AQuartoGame::HandleGameStart()
 void AQuartoGame::HandleDrawEnd()
 {
 	//evaluate game
-	bool isGameWon = IsWinConditionMet();
-	bool canContinuePlaying = m_gameBoard && m_gameBoard->GetNumberOfFreeSlots() > 0;
+	brBool const isGameWon = IsWinConditionMet();
+	brBool const canContinuePlaying = m_gameBoard && m_gameBoard->GetNumberOfFreeSlots() > 0;
 
 	if(isGameWon)
 	{
@@ -126,7 +126,7 @@ void AQuartoGame::HandleTokenSelection()
 
 void AQuartoGame::HandleSlotSelection()
 {
-	bool showDebug = true; // todo: move to imgui
+	brBool showDebug = true; // todo: move to imgui
 	if (m_pickedUpToken && m_gameBoard 
 		&& m_gameBoard->CanFindFreeSlot(FetchMouseCursorTargetHitResult(), showDebug))
 	{
@@ -134,7 +134,7 @@ void AQuartoGame::HandleSlotSelection()
 	}
 }
 
-bool AQuartoGame::IsWinConditionMet() const
+brBool AQuartoGame::IsWinConditionMet() const
 {
 	if(!m_gameBoard)
 	{
@@ -143,7 +143,7 @@ bool AQuartoGame::IsWinConditionMet() const
 
 	TArray<AQuartoToken*> tokensOnBoard = m_gameBoard->GetTokensOnBoardGrid();
 
-	static int32 winConstellations[10][4] =
+	static brS32 winConstellations[10][4] =
 	{
 		//vertical
 		{0,4,8,12},
@@ -162,9 +162,9 @@ bool AQuartoGame::IsWinConditionMet() const
 		{12,9,6,3}
 	};
 
-	for(int32 y = 0; y < 10; ++y)
+	for(brS32 y = 0; y < 10; ++y)
 	{
-		int32* indices = winConstellations[y];
+		brS32* indices = winConstellations[y];
 
 		if(!tokensOnBoard[indices[0]] 
 			|| !tokensOnBoard[indices[1]]
@@ -174,13 +174,13 @@ bool AQuartoGame::IsWinConditionMet() const
 			continue;
 		}
 
-		int32 matchingPropertiesMask =
+		brS32 matchingPropertiesMask =
 			tokensOnBoard[indices[0]]->GetPropertiesArrayAsBitMask() &
 			tokensOnBoard[indices[1]]->GetPropertiesArrayAsBitMask() &
 			tokensOnBoard[indices[2]]->GetPropertiesArrayAsBitMask() &
 			tokensOnBoard[indices[3]]->GetPropertiesArrayAsBitMask();
 
-		int32 matchingColor =
+		brS32 matchingColor =
 			tokensOnBoard[indices[0]]->GetColorAsBitMask() &
 			tokensOnBoard[indices[1]]->GetColorAsBitMask() &
 			tokensOnBoard[indices[2]]->GetColorAsBitMask() &

@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
+#include "Common/UnrealCommon.h"
 #include "GameFramework/Pawn.h"
 #include "QuartoGame.generated.h"
 
@@ -15,7 +15,7 @@ class AQuartoGame : public APawn
 {
 	GENERATED_UCLASS_BODY()
 
-	enum class EGameState : uint8
+	enum class EGameState : brU8
 	{
 		GameStart,
 		TokenSelection,
@@ -46,7 +46,7 @@ private:
 	void HandleSlotSelection();
 
 	/** Game Specifics */
-	bool IsWinConditionMet() const;
+	brBool IsWinConditionMet() const;
 
 	/** Player Input */
 	void HandlePlayerSelectInput();

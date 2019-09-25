@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
+#include "Common/UnrealCommon.h"
 #include "Components/CapsuleComponent.h"
 #include "QuartoBoardSlotComponent.generated.h"
 
@@ -18,15 +18,15 @@ public:
 	UQuartoBoardSlotComponent();
 
 	FORCEINLINE void SetX(int32 xSlot) { m_xSlot = xSlot; }
-	FORCEINLINE int32 GetX() const { return m_xSlot; }
+	FORCEINLINE brS32 GetX() const { return m_xSlot; }
 	FORCEINLINE void SetY(int32 ySlot) { m_ySlot = ySlot; }
-	FORCEINLINE int32 GetY() const { return m_ySlot; }
+	FORCEINLINE brS32 GetY() const { return m_ySlot; }
 
 	void SetIsFree(bool isFree) { m_isFree = isFree; }
-	bool IsFree() const { return m_isFree; }
+	brBool IsFree() const { return m_isFree; }
 
 private:
-	int32 m_xSlot;
-	int32 m_ySlot;
-	bool m_isFree;
+	brS32 m_xSlot;
+	brS32 m_ySlot;
+	brBool m_isFree;
 };
