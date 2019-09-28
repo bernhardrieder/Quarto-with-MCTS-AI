@@ -1,8 +1,6 @@
 // F
 
 #include "QuartoBoardSlotComponent.h"
-#include "QuartoBoard.h"
-#include "QuartoToken.h"
 
 UQuartoBoardSlotComponent::UQuartoBoardSlotComponent()
 : m_xSlot(0)

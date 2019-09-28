@@ -91,7 +91,7 @@ void AQuartoGame::HandleDrawEnd()
 {
 	//evaluate game
 	brBool const isGameWon = m_gameBoard && IsWinConditionMet(m_gameBoard->GetData());
-	brBool const canContinuePlaying = m_gameBoard && m_gameBoard->GetNumberOfFreeSlots() > 0;
+	brBool const canContinuePlaying = m_gameBoard && m_gameBoard->GetData().GetNumberOfFreeSlots() > 0;
 
 	if(isGameWon)
 	{

@@ -4,17 +4,12 @@
 
 #include "Common/UnrealCommon.h"
 #include "GameFramework/Actor.h"
-#include "QuartoToken.h"
+#include "QuartoData.h"
 #include "QuartoBoard.generated.h"
 
 class AQuartoToken;
 class UQuartoBoardSlotComponent;
 class AQuartoGame;
-
-struct QuartoBoardData
-{
-	QuartoTokenData m_tokensOnBoardGrid[16]; //xDim, yDim = 4
-};
 
 UCLASS()
 class QUARTO_API AQuartoBoard : public AActor
@@ -40,7 +35,6 @@ public:
 	void HoverTokenOverLastFoundFreeSlot(AQuartoToken* token);
 	void PlaceTokenOnLastFoundFreeSlot(AQuartoToken* token);
 
-	brS32 GetNumberOfFreeSlots() const;
 	QuartoBoardData const& GetData() const { return m_data; }
 
 protected:

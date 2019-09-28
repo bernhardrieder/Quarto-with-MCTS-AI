@@ -4,7 +4,6 @@
 #include "QuartoBoard.h"
 #include "Components/StaticMeshComponent.h"
 #include "QuartoBoardSlotComponent.h"
-#include "Misc/Char.h"
 #include "DrawDebugHelpers.h"
 #include "QuartoToken.h"
 
@@ -20,25 +19,12 @@ AQuartoBoard::AQuartoBoard()
 	m_meshComponent->SetCollisionProfileName("BlockAllDynamic");
 	SetRootComponent(m_meshComponent);
 
-	for(brU8 i = 0; i < 16; ++i)
+	for(brU8 i = 0; i < QUARTO_BOARD_AVAILABLE_SLOTS; ++i)
 	{
 		UQuartoBoardSlotComponent* slotComponent = CreateDefaultSubobject<UQuartoBoardSlotComponent>(FName(*FString::FromInt(i)));
 		slotComponent->SetupAttachment(RootComponent);
 		m_slotComponents.Add(slotComponent);
 	}
-}
-
-brS32 AQuartoBoard::GetNumberOfFreeSlots() const
-{
-	brS32 numOfFreeSlots = 0;
-	for(auto slot : m_slotComponents)
-	{
-		if(slot->IsFree())
-		{
-			++numOfFreeSlots;
-		}
-	}
-	return numOfFreeSlots;
 }
 
 void AQuartoBoard::BeginPlay()
@@ -48,7 +34,7 @@ void AQuartoBoard::BeginPlay()
 	TArray<FName> socketNames = m_meshComponent->GetAllSocketNames();
 	if(socketNames.Num() == m_slotComponents.Num())
 	{
-		for (brS32 i = 0; i < 16; ++i)
+		for (brU32 i = 0; i < QUARTO_BOARD_AVAILABLE_SLOTS; ++i)
 		{
 			m_slotComponents[i]->AttachToComponent(RootComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale, socketNames[i]);
 
@@ -78,10 +64,7 @@ void AQuartoBoard::Reset()
 			slot->SetIsFree(true);
 		}
 	}
-	for(brS32 i = 0; i < 16; ++i)
-	{
-		m_data.m_tokensOnBoardGrid[i].Invalidate();
-	}
+	m_data.Reset();
 	m_lastFoundFreeSlot = nullptr;
 	Super::Reset();
 }
@@ -137,5 +120,5 @@ void AQuartoBoard::PlaceTokenOnLastFoundFreeSlot(AQuartoToken* token)
 
 	int32 x = m_lastFoundFreeSlot->GetX();
 	int32 y = m_lastFoundFreeSlot->GetY();
-	m_data.m_tokensOnBoardGrid[y * 4 + x] = token->GetData();
+	m_data.m_tokensOnBoardGrid[y * QUARTO_BOARD_SIZE_Y + x] = token->GetData();
 }

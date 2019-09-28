@@ -6,9 +6,6 @@
 #include "Components/CapsuleComponent.h"
 #include "QuartoBoardSlotComponent.generated.h"
 
-class AQuartoBoard;
-class AQuartoToken;
-
 UCLASS(Blueprintable, ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class QUARTO_API UQuartoBoardSlotComponent : public UCapsuleComponent
 {
