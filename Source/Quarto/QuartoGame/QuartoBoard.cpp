@@ -80,7 +80,7 @@ void AQuartoBoard::Reset()
 	}
 	for(brS32 i = 0; i < 16; ++i)
 	{
-		m_tokensOnBoardGrid[i] = nullptr;
+		m_data.m_tokensOnBoardGrid[i].Invalidate();
 	}
 	m_lastFoundFreeSlot = nullptr;
 	Super::Reset();
@@ -137,5 +137,5 @@ void AQuartoBoard::PlaceTokenOnLastFoundFreeSlot(AQuartoToken* token)
 
 	int32 x = m_lastFoundFreeSlot->GetX();
 	int32 y = m_lastFoundFreeSlot->GetY();
-	m_tokensOnBoardGrid[y * 4 + x] = token;
+	m_data.m_tokensOnBoardGrid[y * 4 + x] = token->GetData();
 }

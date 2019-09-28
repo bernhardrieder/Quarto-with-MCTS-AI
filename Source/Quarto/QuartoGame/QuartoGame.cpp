@@ -90,7 +90,7 @@ void AQuartoGame::HandleGameStart()
 void AQuartoGame::HandleDrawEnd()
 {
 	//evaluate game
-	brBool const isGameWon = IsWinConditionMet();
+	brBool const isGameWon = m_gameBoard && IsWinConditionMet(m_gameBoard->GetData());
 	brBool const canContinuePlaying = m_gameBoard && m_gameBoard->GetNumberOfFreeSlots() > 0;
 
 	if(isGameWon)
@@ -134,14 +134,9 @@ void AQuartoGame::HandleSlotSelection()
 	}
 }
 
-brBool AQuartoGame::IsWinConditionMet() const
+brBool AQuartoGame::IsWinConditionMet(QuartoBoardData const& gameBoard)
 {
-	if(!m_gameBoard)
-	{
-		return false;
-	}
-
-	TArray<AQuartoToken*> tokensOnBoard = m_gameBoard->GetTokensOnBoardGrid();
+	auto& tokensOnBoard = gameBoard.m_tokensOnBoardGrid;
 
 	static brU32 winConstellations[10][4] =
 	{
@@ -162,32 +157,32 @@ brBool AQuartoGame::IsWinConditionMet() const
 		{12,9,6,3}
 	};
 
-	for(brU32 y = 0; y < 10; ++y)
+	for (brU32 y = 0; y < 10; ++y)
 	{
 		brU32* indices = winConstellations[y];
 
-		if(!tokensOnBoard[indices[0]] 
-			|| !tokensOnBoard[indices[1]]
-			|| !tokensOnBoard[indices[2]]
-			|| !tokensOnBoard[indices[3]])
+		if (!tokensOnBoard[indices[0]].IsValid()
+			|| !tokensOnBoard[indices[1]].IsValid()
+			|| !tokensOnBoard[indices[2]].IsValid()
+			|| !tokensOnBoard[indices[3]].IsValid())
 		{
 			continue;
 		}
 
 		brU32 const matchingPropertiesMask =
-			tokensOnBoard[indices[0]]->GetData().GetPropertiesBitMask() &
-			tokensOnBoard[indices[1]]->GetData().GetPropertiesBitMask() &
-			tokensOnBoard[indices[2]]->GetData().GetPropertiesBitMask() &
-			tokensOnBoard[indices[3]]->GetData().GetPropertiesBitMask();
+			tokensOnBoard[indices[0]].GetPropertiesBitMask() &
+			tokensOnBoard[indices[1]].GetPropertiesBitMask() &
+			tokensOnBoard[indices[2]].GetPropertiesBitMask() &
+			tokensOnBoard[indices[3]].GetPropertiesBitMask();
 
 		brU32 const matchingColor =
-			tokensOnBoard[indices[0]]->GetData().GetColorBitMask() &
-			tokensOnBoard[indices[1]]->GetData().GetColorBitMask() &
-			tokensOnBoard[indices[2]]->GetData().GetColorBitMask() &
-			tokensOnBoard[indices[3]]->GetData().GetColorBitMask();
+			tokensOnBoard[indices[0]].GetColorBitMask() &
+			tokensOnBoard[indices[1]].GetColorBitMask() &
+			tokensOnBoard[indices[2]].GetColorBitMask() &
+			tokensOnBoard[indices[3]].GetColorBitMask();
 
 		//see EQuartoTokenColor && EQuartoTokenProperties that no value starts at 0
-		if(matchingPropertiesMask > 0 || matchingColor > 0)
+		if (matchingPropertiesMask > 0 || matchingColor > 0)
 		{
 			return true;
 		}

@@ -6,6 +6,7 @@
 #include "GameFramework/Pawn.h"
 #include "QuartoGame.generated.h"
 
+struct QuartoBoardData;
 class AQuartoBoard;
 class AQuartoToken;
 class UQuartoBoardSlotComponent;
@@ -34,6 +35,7 @@ protected:
 public:
 	void Tick(float DeltaSeconds) override;
 	void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
+	static brBool IsWinConditionMet(QuartoBoardData const& gameBoard);
 
 protected:
 	void BeginPlay() override;
@@ -46,7 +48,6 @@ private:
 	void HandleSlotSelection();
 
 	/** Game Specifics */
-	brBool IsWinConditionMet() const;
 
 	/** Player Input */
 	void HandlePlayerSelectInput();

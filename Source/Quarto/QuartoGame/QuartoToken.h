@@ -34,14 +34,18 @@ struct QuartoTokenData
 	QuartoTokenData()
 		: QuartoTokenData(EQuartoTokenColor::Color1, {}) {};
 	QuartoTokenData(EQuartoTokenColor color, EQuartoTokenProperties property1, EQuartoTokenProperties property2, EQuartoTokenProperties property3)
-		: QuartoTokenData(color, { property1, property2, property3 }){}
+		: QuartoTokenData(color, { property1, property2, property3 }) {}
 	QuartoTokenData(EQuartoTokenColor color, TArray<EQuartoTokenProperties> properties);
 
 	TArray<EQuartoTokenProperties> GetProperties() const { return m_properties; }
 	bool HasAtLeastOneMatchingProperty(QuartoTokenData& other) const { return (m_propertiesBitmask & other.m_propertiesBitmask) > 0; }
 	brU32 GetPropertiesBitMask() const { return m_propertiesBitmask; }
+
 	EQuartoTokenColor GetColor() const { return m_color; }
 	brU32 GetColorBitMask() const { return static_cast<brU32>(m_color); }
+
+	brBool IsValid() const { return m_propertiesBitmask > 0; }
+	void Invalidate() { m_propertiesBitmask = 0; }
 	
 public:
 	static TArray<QuartoTokenData> PossiblePermutations;
@@ -86,7 +90,7 @@ public:
 	void StartHoverOver(const FVector& location);
 	void StopHover();
 
-	QuartoTokenData& GetData() { return m_data; }
+	QuartoTokenData const& GetData() const { return m_data; }
 	
 private:
 	AQuartoGame* m_ownerGame;
