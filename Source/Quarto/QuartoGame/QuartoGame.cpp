@@ -143,7 +143,7 @@ brBool AQuartoGame::IsWinConditionMet() const
 
 	TArray<AQuartoToken*> tokensOnBoard = m_gameBoard->GetTokensOnBoardGrid();
 
-	static brS32 winConstellations[10][4] =
+	static brU32 winConstellations[10][4] =
 	{
 		//vertical
 		{0,4,8,12},
@@ -162,9 +162,9 @@ brBool AQuartoGame::IsWinConditionMet() const
 		{12,9,6,3}
 	};
 
-	for(brS32 y = 0; y < 10; ++y)
+	for(brU32 y = 0; y < 10; ++y)
 	{
-		brS32* indices = winConstellations[y];
+		brU32* indices = winConstellations[y];
 
 		if(!tokensOnBoard[indices[0]] 
 			|| !tokensOnBoard[indices[1]]
@@ -174,17 +174,17 @@ brBool AQuartoGame::IsWinConditionMet() const
 			continue;
 		}
 
-		brS32 matchingPropertiesMask =
-			tokensOnBoard[indices[0]]->GetPropertiesArrayAsBitMask() &
-			tokensOnBoard[indices[1]]->GetPropertiesArrayAsBitMask() &
-			tokensOnBoard[indices[2]]->GetPropertiesArrayAsBitMask() &
-			tokensOnBoard[indices[3]]->GetPropertiesArrayAsBitMask();
+		brU32 const matchingPropertiesMask =
+			tokensOnBoard[indices[0]]->GetData().GetPropertiesBitMask() &
+			tokensOnBoard[indices[1]]->GetData().GetPropertiesBitMask() &
+			tokensOnBoard[indices[2]]->GetData().GetPropertiesBitMask() &
+			tokensOnBoard[indices[3]]->GetData().GetPropertiesBitMask();
 
-		brS32 matchingColor =
-			tokensOnBoard[indices[0]]->GetColorAsBitMask() &
-			tokensOnBoard[indices[1]]->GetColorAsBitMask() &
-			tokensOnBoard[indices[2]]->GetColorAsBitMask() &
-			tokensOnBoard[indices[3]]->GetColorAsBitMask();
+		brU32 const matchingColor =
+			tokensOnBoard[indices[0]]->GetData().GetColorBitMask() &
+			tokensOnBoard[indices[1]]->GetData().GetColorBitMask() &
+			tokensOnBoard[indices[2]]->GetData().GetColorBitMask() &
+			tokensOnBoard[indices[3]]->GetData().GetColorBitMask();
 
 		//see EQuartoTokenColor && EQuartoTokenProperties that no value starts at 0
 		if(matchingPropertiesMask > 0 || matchingColor > 0)

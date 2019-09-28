@@ -10,6 +10,7 @@ class UMaterialInstanceDynamic;
 class UQuartoBoardSlotComponent;
 class AQuartoGame;
 
+
 UENUM(BlueprintType)
 enum class EQuartoTokenColor : uint8 /*brU8 -> UE header tool doesn't like it*/
 {
@@ -24,8 +25,33 @@ enum class EQuartoTokenProperties : uint8 /*brU8 -> UE header tool doesn't like 
 	Round		= 0x02 	UMETA(DisplayName = "Round"),
 	Small		= 0x04	UMETA(DisplayName = "Small"),
 	Tall		= 0x08	UMETA(DisplayName = "Tall"),
-	Hole		= 0x10	UMETA(DisplayName = "Hole")
+	Hole		= 0x10	UMETA(DisplayName = "Hole"),
+	Filled		= 0x20	UMETA(DisplayName = "Filled")
 };
+
+struct QuartoTokenData
+{
+	QuartoTokenData()
+		: QuartoTokenData(EQuartoTokenColor::Color1, {}) {};
+	QuartoTokenData(EQuartoTokenColor color, EQuartoTokenProperties property1, EQuartoTokenProperties property2, EQuartoTokenProperties property3)
+		: QuartoTokenData(color, { property1, property2, property3 }){}
+	QuartoTokenData(EQuartoTokenColor color, TArray<EQuartoTokenProperties> properties);
+
+	TArray<EQuartoTokenProperties> GetProperties() const { return m_properties; }
+	bool HasAtLeastOneMatchingProperty(QuartoTokenData& other) const { return (m_propertiesBitmask & other.m_propertiesBitmask) > 0; }
+	brU32 GetPropertiesBitMask() const { return m_propertiesBitmask; }
+	EQuartoTokenColor GetColor() const { return m_color; }
+	brU32 GetColorBitMask() const { return static_cast<brU32>(m_color); }
+	
+public:
+	static TArray<QuartoTokenData> PossiblePermutations;
+	
+private:
+	EQuartoTokenColor m_color;
+	TArray<EQuartoTokenProperties> m_properties;
+	brU32 m_propertiesBitmask;
+};
+
 
 UCLASS()
 class QUARTO_API AQuartoToken : public AActor
@@ -60,18 +86,13 @@ public:
 	void StartHoverOver(const FVector& location);
 	void StopHover();
 
-	TArray<EQuartoTokenProperties> GetProperties() const { return m_properties; }
-	bool HasAtLeastOneMatchingProperty(AQuartoToken* other) const;
-	brS32 GetPropertiesArrayAsBitMask() const { return m_propertiesArrayAsBitmask; }
-
-	EQuartoTokenColor GetColor() const { return m_color; }
-	brS32 GetColorAsBitMask() const { return static_cast<brS32>(m_color); }
-
+	QuartoTokenData& GetData() { return m_data; }
+	
 private:
 	AQuartoGame* m_ownerGame;
 	UMaterialInstanceDynamic* m_materialInstance;
 	FVector m_initialPosition;
-	brS32 m_propertiesArrayAsBitmask;
+	QuartoTokenData m_data;
 	brBool m_bIsPlacedOnBoard;
 	brBool m_bIsHighlightedForPlayer;
 	brBool m_bIsHovering;

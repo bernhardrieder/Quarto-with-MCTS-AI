@@ -16,3 +16,5 @@ using brS64 = int64;
 using brS32 = int32;
 using brS16 = int16;
 using brS8 = int8;
+
+#define brFloatMax FLT_MAX

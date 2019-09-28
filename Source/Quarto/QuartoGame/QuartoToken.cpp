@@ -6,11 +6,41 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "QuartoBoardSlotComponent.h"
 
+TArray<QuartoTokenData> QuartoTokenData::PossiblePermutations = 
+{
+	QuartoTokenData(EQuartoTokenColor::Color1, EQuartoTokenProperties::Filled, EQuartoTokenProperties::Quadratic, EQuartoTokenProperties::Small),
+	QuartoTokenData(EQuartoTokenColor::Color1, EQuartoTokenProperties::Filled, EQuartoTokenProperties::Quadratic, EQuartoTokenProperties::Tall),
+	QuartoTokenData(EQuartoTokenColor::Color1, EQuartoTokenProperties::Hole, EQuartoTokenProperties::Quadratic, EQuartoTokenProperties::Small),
+	QuartoTokenData(EQuartoTokenColor::Color1, EQuartoTokenProperties::Hole, EQuartoTokenProperties::Quadratic, EQuartoTokenProperties::Tall),
+	QuartoTokenData(EQuartoTokenColor::Color1, EQuartoTokenProperties::Filled, EQuartoTokenProperties::Round, EQuartoTokenProperties::Small),
+	QuartoTokenData(EQuartoTokenColor::Color1, EQuartoTokenProperties::Filled, EQuartoTokenProperties::Round, EQuartoTokenProperties::Tall),
+	QuartoTokenData(EQuartoTokenColor::Color1, EQuartoTokenProperties::Hole, EQuartoTokenProperties::Round, EQuartoTokenProperties::Small),
+	QuartoTokenData(EQuartoTokenColor::Color1, EQuartoTokenProperties::Hole, EQuartoTokenProperties::Round, EQuartoTokenProperties::Tall),
+	QuartoTokenData(EQuartoTokenColor::Color2, EQuartoTokenProperties::Filled, EQuartoTokenProperties::Quadratic, EQuartoTokenProperties::Small),
+	QuartoTokenData(EQuartoTokenColor::Color2, EQuartoTokenProperties::Filled, EQuartoTokenProperties::Quadratic, EQuartoTokenProperties::Tall),
+	QuartoTokenData(EQuartoTokenColor::Color2, EQuartoTokenProperties::Hole, EQuartoTokenProperties::Quadratic, EQuartoTokenProperties::Small),
+	QuartoTokenData(EQuartoTokenColor::Color2, EQuartoTokenProperties::Hole, EQuartoTokenProperties::Quadratic, EQuartoTokenProperties::Tall),
+	QuartoTokenData(EQuartoTokenColor::Color2, EQuartoTokenProperties::Filled, EQuartoTokenProperties::Round, EQuartoTokenProperties::Small),
+	QuartoTokenData(EQuartoTokenColor::Color2, EQuartoTokenProperties::Filled, EQuartoTokenProperties::Round, EQuartoTokenProperties::Tall),
+	QuartoTokenData(EQuartoTokenColor::Color2, EQuartoTokenProperties::Hole, EQuartoTokenProperties::Round, EQuartoTokenProperties::Small),
+	QuartoTokenData(EQuartoTokenColor::Color2, EQuartoTokenProperties::Hole, EQuartoTokenProperties::Round, EQuartoTokenProperties::Tall),
+};
+
+QuartoTokenData::QuartoTokenData(EQuartoTokenColor color, TArray<EQuartoTokenProperties> properties)
+: m_color(color)
+, m_properties(properties)
+, m_propertiesBitmask(0u)
+{
+	for (EQuartoTokenProperties property : properties)
+	{
+		m_propertiesBitmask |= static_cast<brS32>(property);
+	}
+}
+
 AQuartoToken::AQuartoToken()
 : m_meshComponent(nullptr)
 , m_materialInstance(nullptr)
 , m_initialPosition(FVector::ZeroVector)
-, m_propertiesArrayAsBitmask(0)
 , m_bIsPlacedOnBoard(false)
 , m_bIsHighlightedForPlayer(false)
 , m_bIsHovering(false)
@@ -33,11 +63,7 @@ void AQuartoToken::BeginPlay()
 	m_materialInstance = UMaterialInstanceDynamic::Create(m_meshComponent->GetMaterial(0), m_meshComponent);
 	m_meshComponent->SetMaterial(0, m_materialInstance);
 	m_initialPosition = GetActorLocation();
-
-	for (EQuartoTokenProperties property : m_properties)
-	{
-		m_propertiesArrayAsBitmask |= static_cast<brS32>(property);
-	}
+	m_data = QuartoTokenData(m_color, m_properties);
 }
 
 void AQuartoToken::Reset()
@@ -78,9 +104,4 @@ void AQuartoToken::StopHover()
 		SetActorLocation(GetActorLocation() - FVector::UpVector * 100.f);
 		m_bIsHovering = false;
 	}
-}
-
-brBool AQuartoToken::HasAtLeastOneMatchingProperty(AQuartoToken* other) const
-{
-	return (this->m_propertiesArrayAsBitmask & other->m_propertiesArrayAsBitmask) > 0;
 }
