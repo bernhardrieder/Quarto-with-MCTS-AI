@@ -22,7 +22,7 @@ struct QuartoTokenData
 	void Invalidate() { m_propertiesBitmask = 0; }
 
 public:
-	static TArray<QuartoTokenData> PossiblePermutations;
+	static TArray<QuartoTokenData> s_possiblePermutations;
 
 private:
 	EQuartoTokenColor m_color;
@@ -32,9 +32,21 @@ private:
 
 struct QuartoBoardData
 {
+	enum class GameStatus
+	{
+		Progress,
+		End
+	};
+
 	brU32 GetNumberOfFreeSlots() const;
 	TArray<brU32> GetEmptySlotIndices() const;
+	TArray<QuartoTokenData> GetFreeTokens() const;
+	GameStatus GetStatus() const;
+
+	void SetTokenOnBoard(brU32 slotIndex, QuartoTokenData const& token);
+	void SetTokenOnBoard(brU32 slotX, brU32 slotY, QuartoTokenData const& token);
 	void Reset();
 
+private:
 	QuartoTokenData m_tokensOnBoardGrid[QUARTO_BOARD_AVAILABLE_SLOTS]; //xDim, yDim = 4
 };

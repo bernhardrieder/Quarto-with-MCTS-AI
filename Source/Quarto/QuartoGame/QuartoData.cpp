@@ -1,6 +1,6 @@
 #include "QuartoData.h"
 
-TArray<QuartoTokenData> QuartoTokenData::PossiblePermutations =
+TArray<QuartoTokenData> QuartoTokenData::s_possiblePermutations =
 {
 	QuartoTokenData(EQuartoTokenColor::Color1, EQuartoTokenProperties::Filled, EQuartoTokenProperties::Quadratic, EQuartoTokenProperties::Small),
 	QuartoTokenData(EQuartoTokenColor::Color1, EQuartoTokenProperties::Filled, EQuartoTokenProperties::Quadratic, EQuartoTokenProperties::Tall),
@@ -57,10 +57,44 @@ TArray<brU32> QuartoBoardData::GetEmptySlotIndices() const
 	return freeSlotIndices;
 }
 
+TArray<QuartoTokenData> QuartoBoardData::GetFreeTokens() const
+{
+	TArray<QuartoTokenData> tokens = QuartoTokenData::s_possiblePermutations;
+	for(auto& token : m_tokensOnBoardGrid)
+	{
+		if(token.IsValid())
+		{
+			tokens.Remove(token);
+		}
+	}
+	return tokens;
+}
+
 void QuartoBoardData::Reset()
 {
 	for (auto& tokenData : m_tokensOnBoardGrid)
 	{
 		tokenData.Invalidate();
+	}
+}
+
+QuartoBoardData::GameStatus QuartoBoardData::GetStatus() const
+{
+	return GameStatus::End;
+}
+
+void QuartoBoardData::SetTokenOnBoard(brU32 slotIndex, QuartoTokenData const& token)
+{
+	if(slotIndex < QUARTO_BOARD_AVAILABLE_SLOTS)
+	{
+		m_tokensOnBoardGrid[slotIndex] = token;
+	}
+}
+
+void QuartoBoardData::SetTokenOnBoard(brU32 slotX, brU32 slotY, QuartoTokenData const& token)
+{
+	if(slotX < QUARTO_BOARD_SIZE_X && slotY < QUARTO_BOARD_SIZE_Y)
+	{
+		SetTokenOnBoard(slotY * 4 + slotX, token);
 	}
 }
