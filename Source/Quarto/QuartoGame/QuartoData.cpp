@@ -31,6 +31,11 @@ QuartoTokenData::QuartoTokenData(EQuartoTokenColor color, TArray<EQuartoTokenPro
 	}
 }
 
+bool QuartoTokenData::operator==(QuartoTokenData const& other) const
+{
+	return this->GetColor() == other.GetColor() && this->GetPropertiesBitMask() == other.GetPropertiesBitMask();
+}
+
 brU32 QuartoBoardData::GetNumberOfFreeSlots() const
 {
 	brU32 count = 0;
@@ -80,7 +85,58 @@ void QuartoBoardData::Reset()
 
 QuartoBoardData::GameStatus QuartoBoardData::GetStatus() const
 {
-	return GameStatus::End;
+	static constexpr brU8 numWinConstellations = 10;
+	static brU32 winConstellations[numWinConstellations][4] =
+	{
+		//vertical
+		{0,4,8,12},
+		{1,5,9,13},
+		{2,6,10,14},
+		{3,7,11,15},
+
+		//horizontal
+		{0,1,2,3},
+		{4,5,6,7},
+		{8,9,10,11},
+		{12,13,14,15},
+
+		//diagonal
+		{0,5,10,15},
+		{12,9,6,3}
+	};
+
+	for (brU8 y = 0; y < numWinConstellations; ++y)
+	{
+		brU32* indices = winConstellations[y];
+
+		if (!m_tokensOnBoardGrid[indices[0]].IsValid()
+			|| !m_tokensOnBoardGrid[indices[1]].IsValid()
+			|| !m_tokensOnBoardGrid[indices[2]].IsValid()
+			|| !m_tokensOnBoardGrid[indices[3]].IsValid())
+		{
+			continue;
+		}
+
+		brU32 const matchingPropertiesMask =
+			m_tokensOnBoardGrid[indices[0]].GetPropertiesBitMask() &
+			m_tokensOnBoardGrid[indices[1]].GetPropertiesBitMask() &
+			m_tokensOnBoardGrid[indices[2]].GetPropertiesBitMask() &
+			m_tokensOnBoardGrid[indices[3]].GetPropertiesBitMask();
+
+		brU32 const matchingColor =
+			m_tokensOnBoardGrid[indices[0]].GetColorBitMask() &
+			m_tokensOnBoardGrid[indices[1]].GetColorBitMask() &
+			m_tokensOnBoardGrid[indices[2]].GetColorBitMask() &
+			m_tokensOnBoardGrid[indices[3]].GetColorBitMask();
+
+		//see EQuartoTokenColor && EQuartoTokenProperties that no value starts at 0
+		if (matchingPropertiesMask > 0 || matchingColor > 0)
+		{
+			return GameStatus::End;
+		}
+	}
+
+	return GameStatus::InProgress;
 }
 
 void QuartoBoardData::SetTokenOnBoard(brU32 slotIndex, QuartoTokenData const& token)
@@ -95,6 +151,6 @@ void QuartoBoardData::SetTokenOnBoard(brU32 slotX, brU32 slotY, QuartoTokenData 
 {
 	if(slotX < QUARTO_BOARD_SIZE_X && slotY < QUARTO_BOARD_SIZE_Y)
 	{
-		SetTokenOnBoard(slotY * 4 + slotX, token);
+		SetTokenOnBoard(slotY * QUARTO_BOARD_SIZE_Y + slotX, token);
 	}
 }

@@ -116,9 +116,5 @@ void AQuartoBoard::PlaceTokenOnLastFoundFreeSlot(AQuartoToken* token)
 	token->SetIsPlacedOnBoard(true);
 	token->SetActorLocation(m_lastFoundFreeSlot->GetComponentLocation());
 	m_lastFoundFreeSlot->SetIsFree(false);
-	
-
-	int32 x = m_lastFoundFreeSlot->GetX();
-	int32 y = m_lastFoundFreeSlot->GetY();
-	m_data.m_tokensOnBoardGrid[y * QUARTO_BOARD_SIZE_Y + x] = token->GetData();
+	m_data.SetTokenOnBoard(m_lastFoundFreeSlot->GetX(), m_lastFoundFreeSlot->GetY(), token->GetData());
 }

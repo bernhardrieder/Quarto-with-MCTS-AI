@@ -11,6 +11,8 @@ struct QuartoTokenData
 		: QuartoTokenData(color, { property1, property2, property3 }) {}
 	QuartoTokenData(EQuartoTokenColor color, TArray<EQuartoTokenProperties> properties);
 
+	bool operator==(QuartoTokenData const& other) const;
+	
 	TArray<EQuartoTokenProperties> GetProperties() const { return m_properties; }
 	bool HasAtLeastOneMatchingProperty(QuartoTokenData& other) const { return (m_propertiesBitmask & other.m_propertiesBitmask) > 0; }
 	brU32 GetPropertiesBitMask() const { return m_propertiesBitmask; }
@@ -34,7 +36,7 @@ struct QuartoBoardData
 {
 	enum class GameStatus
 	{
-		Progress,
+		InProgress,
 		End
 	};
 
@@ -42,6 +44,7 @@ struct QuartoBoardData
 	TArray<brU32> GetEmptySlotIndices() const;
 	TArray<QuartoTokenData> GetFreeTokens() const;
 	GameStatus GetStatus() const;
+	
 
 	void SetTokenOnBoard(brU32 slotIndex, QuartoTokenData const& token);
 	void SetTokenOnBoard(brU32 slotX, brU32 slotY, QuartoTokenData const& token);

@@ -90,7 +90,7 @@ void AQuartoGame::HandleGameStart()
 void AQuartoGame::HandleDrawEnd()
 {
 	//evaluate game
-	brBool const isGameWon = m_gameBoard && IsWinConditionMet(m_gameBoard->GetData());
+	brBool const isGameWon = m_gameBoard && m_gameBoard->GetData().GetStatus() == QuartoBoardData::GameStatus::End;
 	brBool const canContinuePlaying = m_gameBoard && m_gameBoard->GetData().GetNumberOfFreeSlots() > 0;
 
 	if(isGameWon)
@@ -132,63 +132,6 @@ void AQuartoGame::HandleSlotSelection()
 	{
 		m_gameBoard->HoverTokenOverLastFoundFreeSlot(m_pickedUpToken);
 	}
-}
-
-brBool AQuartoGame::IsWinConditionMet(QuartoBoardData const& gameBoard)
-{
-	auto& tokensOnBoard = gameBoard.m_tokensOnBoardGrid;
-
-	static brU32 winConstellations[10][4] =
-	{
-		//vertical
-		{0,4,8,12},
-		{1,5,9,13},
-		{2,6,10,14},
-		{3,7,11,15},
-
-		//horizontal
-		{0,1,2,3},
-		{4,5,6,7},
-		{8,9,10,11},
-		{12,13,14,15},
-
-		//diagonal
-		{0,5,10,15},
-		{12,9,6,3}
-	};
-
-	for (brU32 y = 0; y < 10; ++y)
-	{
-		brU32* indices = winConstellations[y];
-
-		if (!tokensOnBoard[indices[0]].IsValid()
-			|| !tokensOnBoard[indices[1]].IsValid()
-			|| !tokensOnBoard[indices[2]].IsValid()
-			|| !tokensOnBoard[indices[3]].IsValid())
-		{
-			continue;
-		}
-
-		brU32 const matchingPropertiesMask =
-			tokensOnBoard[indices[0]].GetPropertiesBitMask() &
-			tokensOnBoard[indices[1]].GetPropertiesBitMask() &
-			tokensOnBoard[indices[2]].GetPropertiesBitMask() &
-			tokensOnBoard[indices[3]].GetPropertiesBitMask();
-
-		brU32 const matchingColor =
-			tokensOnBoard[indices[0]].GetColorBitMask() &
-			tokensOnBoard[indices[1]].GetColorBitMask() &
-			tokensOnBoard[indices[2]].GetColorBitMask() &
-			tokensOnBoard[indices[3]].GetColorBitMask();
-
-		//see EQuartoTokenColor && EQuartoTokenProperties that no value starts at 0
-		if (matchingPropertiesMask > 0 || matchingColor > 0)
-		{
-			return true;
-		}
-	}
-
-	return false;
 }
 
 void AQuartoGame::HandlePlayerSelectInput()

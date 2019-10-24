@@ -59,7 +59,7 @@ QuartoBoardData MonteCarloTreeSearch::FindNextMove(QuartoBoardData& currentBoard
 	for(brU32 sim = 0; sim < 100; ++sim)
 	{
 		Node& promisingNode = Select(root);
-		if(promisingNode.State.BoardData.GetStatus() == QuartoBoardData::GameStatus::Progress)
+		if(promisingNode.State.BoardData.GetStatus() == QuartoBoardData::GameStatus::InProgress)
 		{
 			Expand(promisingNode);
 		}
@@ -119,7 +119,7 @@ MonteCarloTreeSearch::PlayerId MonteCarloTreeSearch::Simulate(Node& node, Player
 	}
 
 	State tmpState = node.State;
-	while(status == QuartoBoardData::GameStatus::Progress)
+	while(status == QuartoBoardData::GameStatus::InProgress)
 	{
 		tmpState.PlayerId = m_playerOpponent[tmpState.PlayerId];
 		tmpState.RandomPlay();
