@@ -21,10 +21,18 @@ class AQuartoGame : public APawn
 		GameStart,
 		TokenSelection,
 		SlotSelection,
+		NpcMoveSelection,
 		DrawEnd,
 		GameEnd
 	};
 
+	enum class EPlayer : brU32
+	{
+		Human = 0,
+		NPC,
+		Count
+	};
+	
 protected:
 	UPROPERTY(EditInstanceOnly, Category = "Game Components", BlueprintReadOnly, meta = (DisplayName = "Game Board"))
 	AQuartoBoard* m_gameBoard;
@@ -45,6 +53,7 @@ private:
 	void HandleGameEnd();
 	void HandleTokenSelection();
 	void HandleSlotSelection();
+	void HandleNpcMoveSelection();
 
 	/** Game Specifics */
 
@@ -57,9 +66,11 @@ private:
 	/** Helper */
 	FHitResult FetchMouseCursorTargetHitResult() const;
 	AQuartoToken* FindToken(const FHitResult& hitResult) const;
-
+	static EPlayer GetNextPlayer(EPlayer currentPlayer);
+	
 private:
 	EGameState m_gameState;
 	AQuartoToken* m_pickedUpToken;
 	AQuartoToken* m_focusedToken;
+	EPlayer m_currentPlayer;
 };

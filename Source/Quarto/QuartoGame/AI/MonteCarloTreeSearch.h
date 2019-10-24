@@ -1,6 +1,7 @@
 #pragma once
 #include "Common/UnrealCommon.h"
 #include "QuartoGame/QuartoData.h"
+#include <tuple>
 
 //https://www.baeldung.com/java-monte-carlo-tree-search
 
@@ -11,6 +12,9 @@ class MonteCarloTreeSearch
 	{
 		TArray<State> GetAllPossibleStates() const;
 		void RandomPlay();
+
+		//Helper
+		void ReplacePlayerIdWithUnused(PlayerId id1, PlayerId id2);
 
 		QuartoBoardData BoardData;
 		brU32 VisitCount;
@@ -29,23 +33,18 @@ class MonteCarloTreeSearch
 	};
 	
 public:
-	//MonteCarloTreeSearch() = default;
-
-	QuartoBoardData FindNextMove(QuartoBoardData& currentBoard, PlayerId playerId);
-	void RegisterPlayerOpponent(PlayerId playerId, PlayerId opponentId);
-	void RemovePlayerOpponent(PlayerId playerId, PlayerId opponentId);
+	static std::tuple<QuartoTokenData, brU32> FindNextMove(QuartoBoardData const& currentBoard, PlayerId playerId, PlayerId opponentId);
 	
 protected:
 	// Selects the most promising node outgoing from this node
 	static Node& Select(Node& node);
 	// Expands the given node with new possible nodes
-	void Expand(Node& node);
+	static void Expand(Node& node, PlayerId playerId, PlayerId opponentId);
 	// Simulates a random play
-	PlayerId Simulate(Node& node, PlayerId playerId);
+	static PlayerId Simulate(Node& node, PlayerId playerId, PlayerId opponentId);
 	// Backpropagate 
 	static void BackPropagate(Node& node, PlayerId playerId);
 
 	static Node& FindBestNodeWithUct(Node& node);
 
-	TMap<PlayerId, PlayerId> m_playerOpponent;
 };

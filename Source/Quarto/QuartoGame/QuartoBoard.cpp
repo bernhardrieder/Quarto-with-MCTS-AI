@@ -118,3 +118,10 @@ void AQuartoBoard::PlaceTokenOnLastFoundFreeSlot(AQuartoToken* token)
 	m_lastFoundFreeSlot->SetIsFree(false);
 	m_data.SetTokenOnBoard(m_lastFoundFreeSlot->GetX(), m_lastFoundFreeSlot->GetY(), token->GetData());
 }
+
+void AQuartoBoard::PlaceTokenOnSlotIndex(AQuartoToken* token, brU32 slotX, brU32 slotY)
+{
+	// find slot
+	// TODO
+	
+}

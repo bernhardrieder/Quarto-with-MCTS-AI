@@ -9,6 +9,7 @@
 #include "QuartoBoard.h"
 #include "QuartoBoardSlotComponent.h"
 #include "QuartoToken.h"
+#include "AI/MonteCarloTreeSearch.h"
 
 AQuartoGame::AQuartoGame(const FObjectInitializer& ObjectInitializer)
 : Super(ObjectInitializer)
@@ -16,6 +17,7 @@ AQuartoGame::AQuartoGame(const FObjectInitializer& ObjectInitializer)
 , m_gameState(EGameState::GameStart)
 , m_pickedUpToken(nullptr)
 , m_focusedToken(nullptr)
+, m_currentPlayer(EPlayer::Human)
 {
 	AutoPossessPlayer = EAutoReceiveInput::Player0;
 }
@@ -54,6 +56,9 @@ void AQuartoGame::Tick(float DeltaSeconds)
 	case EGameState::SlotSelection: 
 		HandleSlotSelection();
 		break;
+	case EGameState::NpcMoveSelection:
+		HandleNpcMoveSelection();
+		break;
 	case EGameState::DrawEnd: 
 		HandleDrawEnd();
 		break;
@@ -85,6 +90,7 @@ void AQuartoGame::HandleGameStart()
 		}
 	}
 	m_gameState = EGameState::TokenSelection;
+	m_currentPlayer = EPlayer::Human;
 }
 
 void AQuartoGame::HandleDrawEnd()
@@ -98,7 +104,25 @@ void AQuartoGame::HandleDrawEnd()
 		//broadcast event
 	}
 
-	m_gameState = isGameWon || !canContinuePlaying ? EGameState::GameEnd : EGameState::TokenSelection;
+	m_currentPlayer = GetNextPlayer(m_currentPlayer);
+
+	if(isGameWon || !canContinuePlaying)
+	{
+		m_gameState = EGameState::GameEnd;
+	}
+	else
+	{
+		switch(m_currentPlayer)
+		{
+		case EPlayer::NPC:
+			m_gameState = EGameState::NpcMoveSelection;
+			break;
+		case EPlayer::Human:
+		default:
+			m_gameState = EGameState::TokenSelection;
+			break;
+		}
+	}
 }
 
 void AQuartoGame::HandleGameEnd()
@@ -132,6 +156,20 @@ void AQuartoGame::HandleSlotSelection()
 	{
 		m_gameBoard->HoverTokenOverLastFoundFreeSlot(m_pickedUpToken);
 	}
+}
+
+void AQuartoGame::HandleNpcMoveSelection()
+{
+	if(m_gameBoard)
+	{
+		std::tuple<QuartoTokenData, brU32> move = MonteCarloTreeSearch::FindNextMove(m_gameBoard->GetData(), static_cast<brU32>(m_currentPlayer), static_cast<brU32>(GetNextPlayer(m_currentPlayer)));
+		QuartoTokenData& moveToken = std::get<0>(move);
+		brU32 moveIndex = std::get<1>(move);
+
+		AQuartoToken** token = m_gameTokens.FindByPredicate([&moveToken](AQuartoToken* t) { return t && t->GetData() == moveToken; });
+	}
+	
+	m_gameState = EGameState::DrawEnd;
 }
 
 void AQuartoGame::HandlePlayerSelectInput()
@@ -215,4 +253,9 @@ AQuartoToken* AQuartoGame::FindToken(const FHitResult& hitResult) const
 		return Cast<AQuartoToken>(hitResult.Actor.Get());
 	}
 	return nullptr;
+}
+
+AQuartoGame::EPlayer AQuartoGame::GetNextPlayer(EPlayer currentPlayer)
+{
+	return static_cast<EPlayer>((static_cast<brU32>(currentPlayer) + 1) % static_cast<brU32>(EPlayer::Count));
 }

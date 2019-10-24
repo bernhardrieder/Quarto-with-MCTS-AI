@@ -25,6 +25,19 @@ void MonteCarloTreeSearch::State::RandomPlay()
 	BoardData.SetTokenOnBoard(emptySlotIndices[randomSlotIdx], freeTokens[randomTokenIdx]);
 }
 
+void MonteCarloTreeSearch::State::ReplacePlayerIdWithUnused(MonteCarloTreeSearch::PlayerId id1,
+	MonteCarloTreeSearch::PlayerId id2)
+{
+	if(PlayerId == id1)
+	{
+		PlayerId = id2;
+	}
+	else if(PlayerId == id2)
+	{
+		PlayerId = id1;
+	}
+}
+
 MonteCarloTreeSearch::Node& MonteCarloTreeSearch::Node::GetChildWithHighestScore()
 {
 	if(Children.Num() == 0)
@@ -49,11 +62,11 @@ MonteCarloTreeSearch::Node& MonteCarloTreeSearch::Node::GetRandomChild()
 	return Children[FMath::RandRange(0, Children.Num() - 1)];
 }
 
-QuartoBoardData MonteCarloTreeSearch::FindNextMove(QuartoBoardData& currentBoard, PlayerId playerId)
+std::tuple<QuartoTokenData, brU32> MonteCarloTreeSearch::FindNextMove(QuartoBoardData const& currentBoard, PlayerId playerId, PlayerId opponentId)
 {
 	Node root;
 	root.State.BoardData = currentBoard;
-	root.State.PlayerId = m_playerOpponent[playerId];
+	root.State.PlayerId = opponentId;
 
 	// can be replaced by time 
 	for(brU32 sim = 0; sim < 100; ++sim)
@@ -61,28 +74,31 @@ QuartoBoardData MonteCarloTreeSearch::FindNextMove(QuartoBoardData& currentBoard
 		Node& promisingNode = Select(root);
 		if(promisingNode.State.BoardData.GetStatus() == QuartoBoardData::GameStatus::InProgress)
 		{
-			Expand(promisingNode);
+			Expand(promisingNode, playerId, opponentId);
 		}
 		Node& nodeToExplore = promisingNode;
 		if(promisingNode.Children.Num() > 0)
 		{
 			nodeToExplore = promisingNode.GetRandomChild();
 		}
-		PlayerId const winnerId = Simulate(nodeToExplore, playerId);
+		PlayerId const winnerId = Simulate(nodeToExplore, playerId, opponentId);
 		BackPropagate(nodeToExplore, winnerId);
 	}
+
+	auto oldEmptySlots = currentBoard.GetEmptySlotIndices();
+	auto oldFreeTokens = currentBoard.GetFreeTokens();
 	
-	return root.GetChildWithHighestScore().State.BoardData;
-}
-
-void MonteCarloTreeSearch::RegisterPlayerOpponent(PlayerId playerId, PlayerId opponentId)
-{
-	m_playerOpponent[playerId] = opponentId;
-}
-
-void MonteCarloTreeSearch::RemovePlayerOpponent(PlayerId playerId, PlayerId opponentId)
-{
-	m_playerOpponent.Remove(playerId);
+	auto& winnerBoard = root.GetChildWithHighestScore().State.BoardData;
+	for(auto& slotIndex : winnerBoard.GetEmptySlotIndices())
+	{
+		oldEmptySlots.Remove(slotIndex);
+	}
+	for(auto& token : winnerBoard.GetFreeTokens())
+	{
+		oldFreeTokens.Remove(token);
+	}
+	
+	return std::make_tuple(oldFreeTokens[0], oldEmptySlots[0]);
 }
 
 MonteCarloTreeSearch::Node& MonteCarloTreeSearch::Select(Node& node)
@@ -95,20 +111,21 @@ MonteCarloTreeSearch::Node& MonteCarloTreeSearch::Select(Node& node)
 	return result;
 }
 
-void MonteCarloTreeSearch::Expand(Node& node)
+void MonteCarloTreeSearch::Expand(Node& node, PlayerId playerId, PlayerId opponentId)
 {
 	TArray<State> possibleStates = node.State.GetAllPossibleStates();
 	for(State& state : possibleStates)
 	{
 		Node newNode;
 		newNode.State = state;
-		newNode.State.PlayerId = m_playerOpponent[node.State.PlayerId];
+		newNode.State.PlayerId = node.State.PlayerId;
+		newNode.State.ReplacePlayerIdWithUnused(playerId, opponentId);
 		newNode.Parent = &node;
 		node.Children.Add(newNode);
 	}
 }
 
-MonteCarloTreeSearch::PlayerId MonteCarloTreeSearch::Simulate(Node& node, PlayerId playerId)
+MonteCarloTreeSearch::PlayerId MonteCarloTreeSearch::Simulate(Node& node, PlayerId playerId, PlayerId opponentId)
 {
 	auto status = node.State.BoardData.GetStatus();
 	if(status == QuartoBoardData::GameStatus::End 
@@ -121,7 +138,7 @@ MonteCarloTreeSearch::PlayerId MonteCarloTreeSearch::Simulate(Node& node, Player
 	State tmpState = node.State;
 	while(status == QuartoBoardData::GameStatus::InProgress)
 	{
-		tmpState.PlayerId = m_playerOpponent[tmpState.PlayerId];
+		tmpState.ReplacePlayerIdWithUnused(playerId, opponentId);
 		tmpState.RandomPlay();
 		status = tmpState.BoardData.GetStatus();
 	}
