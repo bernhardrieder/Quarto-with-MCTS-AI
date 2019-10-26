@@ -4,6 +4,7 @@
 
 #include "Common/UnrealCommon.h"
 #include "GameFramework/Pawn.h"
+#include "QuartoCommon.h"
 #include "QuartoGame.generated.h"
 
 struct QuartoBoardData;
@@ -28,8 +29,10 @@ class AQuartoGame : public APawn
 
 	enum class EPlayer : brU32
 	{
-		Human = 0,
-		NPC,
+		Player_1 = 0,
+		Player_2,
+		NPC_1,
+		NPC_2,
 		Count
 	};
 	
@@ -66,11 +69,13 @@ private:
 	/** Helper */
 	FHitResult FetchMouseCursorTargetHitResult() const;
 	AQuartoToken* FindToken(const FHitResult& hitResult) const;
-	static EPlayer GetNextPlayer(EPlayer currentPlayer);
+	EPlayer GetNextPlayer(EPlayer currentPlayer);
+	static constexpr brBool IsPlayerNpc(EPlayer player) { return player == EPlayer::NPC_1 || player == EPlayer::NPC_2; }
 	
 private:
 	EGameState m_gameState;
 	AQuartoToken* m_pickedUpToken;
 	AQuartoToken* m_focusedToken;
+	EPlayer m_players[QUARTO_NUM_OF_PLAYERS];
 	EPlayer m_currentPlayer;
 };

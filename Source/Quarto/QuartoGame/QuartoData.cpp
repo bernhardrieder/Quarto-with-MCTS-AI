@@ -36,6 +36,11 @@ bool QuartoTokenData::operator==(QuartoTokenData const& other) const
 	return this->GetColor() == other.GetColor() && this->GetPropertiesBitMask() == other.GetPropertiesBitMask();
 }
 
+bool QuartoBoardSlotCoordinates::operator==(QuartoBoardSlotCoordinates const& other) const
+{
+	return X == other.X && Y == other.Y;
+}
+
 brU32 QuartoBoardData::GetNumberOfFreeSlots() const
 {
 	brU32 count = 0;
@@ -49,17 +54,17 @@ brU32 QuartoBoardData::GetNumberOfFreeSlots() const
 	return count;
 }
 
-TArray<brU32> QuartoBoardData::GetEmptySlotIndices() const
+TArray<QuartoBoardSlotCoordinates> QuartoBoardData::GetEmptySlotCoordinates() const
 {
-	TArray<brU32> freeSlotIndices;
+	TArray<QuartoBoardSlotCoordinates> freeSlotCoordinates;
 	for (brU32 i = 0; i < QUARTO_BOARD_AVAILABLE_SLOTS; ++i)
 	{
 		if (!m_tokensOnBoardGrid[i].IsValid())
 		{
-			freeSlotIndices.Push(i);
+			freeSlotCoordinates.Push(ConvertIndexToSlotCoordinates(i));
 		}
 	}
-	return freeSlotIndices;
+	return freeSlotCoordinates;
 }
 
 TArray<QuartoTokenData> QuartoBoardData::GetFreeTokens() const
@@ -81,6 +86,16 @@ void QuartoBoardData::Reset()
 	{
 		tokenData.Invalidate();
 	}
+}
+
+QuartoBoardSlotCoordinates QuartoBoardData::ConvertIndexToSlotCoordinates(brU32 slotIndex)
+{
+	return QuartoBoardSlotCoordinates(slotIndex % QUARTO_BOARD_SIZE_Y, slotIndex / QUARTO_BOARD_SIZE_Y);
+}
+
+brU32 QuartoBoardData::ConvertCoordinatesToSlotIndex(QuartoBoardSlotCoordinates const& coordinates)
+{
+	return coordinates.Y * QUARTO_BOARD_SIZE_Y + coordinates.X;
 }
 
 QuartoBoardData::GameStatus QuartoBoardData::GetStatus() const
@@ -139,18 +154,10 @@ QuartoBoardData::GameStatus QuartoBoardData::GetStatus() const
 	return GameStatus::InProgress;
 }
 
-void QuartoBoardData::SetTokenOnBoard(brU32 slotIndex, QuartoTokenData const& token)
+void QuartoBoardData::SetTokenOnBoard(QuartoBoardSlotCoordinates coordinates, QuartoTokenData const& token)
 {
-	if(slotIndex < QUARTO_BOARD_AVAILABLE_SLOTS)
+	if (coordinates.AreValid())
 	{
-		m_tokensOnBoardGrid[slotIndex] = token;
-	}
-}
-
-void QuartoBoardData::SetTokenOnBoard(brU32 slotX, brU32 slotY, QuartoTokenData const& token)
-{
-	if(slotX < QUARTO_BOARD_SIZE_X && slotY < QUARTO_BOARD_SIZE_Y)
-	{
-		SetTokenOnBoard(slotY * QUARTO_BOARD_SIZE_Y + slotX, token);
+		m_tokensOnBoardGrid[ConvertCoordinatesToSlotIndex(coordinates)] = token;
 	}
 }

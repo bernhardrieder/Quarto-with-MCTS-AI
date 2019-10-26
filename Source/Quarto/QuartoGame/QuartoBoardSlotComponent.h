@@ -4,6 +4,7 @@
 
 #include "Common/UnrealCommon.h"
 #include "Components/CapsuleComponent.h"
+#include "QuartoBoard.h"
 #include "QuartoBoardSlotComponent.generated.h"
 
 UCLASS(Blueprintable, ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
@@ -14,16 +15,13 @@ class QUARTO_API UQuartoBoardSlotComponent : public UCapsuleComponent
 public:	
 	UQuartoBoardSlotComponent();
 
-	FORCEINLINE void SetX(int32 xSlot) { m_xSlot = xSlot; }
-	FORCEINLINE brS32 GetX() const { return m_xSlot; }
-	FORCEINLINE void SetY(int32 ySlot) { m_ySlot = ySlot; }
-	FORCEINLINE brS32 GetY() const { return m_ySlot; }
+	FORCEINLINE void SetCoordinates(QuartoBoardSlotCoordinates const& coordinates) { m_coordinates = coordinates; }
+	FORCEINLINE QuartoBoardSlotCoordinates GetCoordinates() const { return m_coordinates; }
 
 	void SetIsFree(bool isFree) { m_isFree = isFree; }
 	brBool IsFree() const { return m_isFree; }
 
 private:
-	brS32 m_xSlot;
-	brS32 m_ySlot;
+	QuartoBoardSlotCoordinates m_coordinates;
 	brBool m_isFree;
 };

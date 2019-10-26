@@ -17,7 +17,7 @@ AQuartoGame::AQuartoGame(const FObjectInitializer& ObjectInitializer)
 , m_gameState(EGameState::GameStart)
 , m_pickedUpToken(nullptr)
 , m_focusedToken(nullptr)
-, m_currentPlayer(EPlayer::Human)
+, m_currentPlayer(EPlayer::Player_1)
 {
 	AutoPossessPlayer = EAutoReceiveInput::Player0;
 }
@@ -63,9 +63,8 @@ void AQuartoGame::Tick(float DeltaSeconds)
 		HandleDrawEnd();
 		break;
 	case EGameState::GameEnd: 
-		HandleGameEnd();
-		break;
 	default:
+		HandleGameEnd();
 		break;
 	}
 }
@@ -90,7 +89,9 @@ void AQuartoGame::HandleGameStart()
 		}
 	}
 	m_gameState = EGameState::TokenSelection;
-	m_currentPlayer = EPlayer::Human;
+	m_players[0] = EPlayer::Player_1;
+	m_players[1] = EPlayer::Player_2;
+	m_currentPlayer = m_players[0];
 }
 
 void AQuartoGame::HandleDrawEnd()
@@ -112,16 +113,7 @@ void AQuartoGame::HandleDrawEnd()
 	}
 	else
 	{
-		switch(m_currentPlayer)
-		{
-		case EPlayer::NPC:
-			m_gameState = EGameState::NpcMoveSelection;
-			break;
-		case EPlayer::Human:
-		default:
-			m_gameState = EGameState::TokenSelection;
-			break;
-		}
+		m_gameState = IsPlayerNpc(m_currentPlayer) ? EGameState::NpcMoveSelection : EGameState::TokenSelection;
 	}
 }
 
@@ -162,9 +154,14 @@ void AQuartoGame::HandleNpcMoveSelection()
 {
 	if(m_gameBoard)
 	{
-		std::tuple<QuartoTokenData, brU32> move = MonteCarloTreeSearch::FindNextMove(m_gameBoard->GetData(), static_cast<brU32>(m_currentPlayer), static_cast<brU32>(GetNextPlayer(m_currentPlayer)));
+		std::tuple<QuartoTokenData, QuartoBoardSlotCoordinates> move = 
+			MonteCarloTreeSearch::FindNextMove(
+				m_gameBoard->GetData(), 
+				static_cast<brU32>(m_currentPlayer), 
+				static_cast<brU32>(GetNextPlayer(m_currentPlayer))
+			);
 		QuartoTokenData& moveToken = std::get<0>(move);
-		brU32 moveIndex = std::get<1>(move);
+		QuartoBoardSlotCoordinates moveCoordinates = std::get<1>(move);
 
 		AQuartoToken** token = m_gameTokens.FindByPredicate([&moveToken](AQuartoToken* t) { return t && t->GetData() == moveToken; });
 	}
@@ -257,5 +254,19 @@ AQuartoToken* AQuartoGame::FindToken(const FHitResult& hitResult) const
 
 AQuartoGame::EPlayer AQuartoGame::GetNextPlayer(EPlayer currentPlayer)
 {
-	return static_cast<EPlayer>((static_cast<brU32>(currentPlayer) + 1) % static_cast<brU32>(EPlayer::Count));
+	//in case I ever decide to make a custom Quarto with more than 2 players
+	auto const itBegin = std::begin(m_players);
+	auto const itEnd = std::end(m_players);
+	auto const it = std::find(itBegin, itEnd, currentPlayer);
+	if(it != itEnd)
+	{
+		brU32 index = it - itBegin;
+		currentPlayer = m_players[++index % QUARTO_NUM_OF_PLAYERS];
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("ERROR: Couldn't find next player! Did you specify the players correctly?"));
+	}
+
+	return currentPlayer;
 }

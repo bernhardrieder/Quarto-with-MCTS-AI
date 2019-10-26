@@ -2,6 +2,7 @@
 
 #include "Common/UnrealCommon.h"
 
+#define QUARTO_NUM_OF_PLAYERS 2
 #define QUARTO_BOARD_SIZE_X 4
 #define QUARTO_BOARD_SIZE_Y 4
 #define QUARTO_BOARD_AVAILABLE_SLOTS 16

@@ -3,8 +3,7 @@
 #include "QuartoBoardSlotComponent.h"
 
 UQuartoBoardSlotComponent::UQuartoBoardSlotComponent()
-: m_xSlot(0)
-, m_ySlot(0)
+: m_coordinates(0,0)
 , m_isFree(true)
 {
 	PrimaryComponentTick.bCanEverTick = false;

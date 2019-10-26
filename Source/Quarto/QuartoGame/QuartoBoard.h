@@ -34,7 +34,7 @@ public:
 	UQuartoBoardSlotComponent* GetLastFoundFreeSlot() const { return m_lastFoundFreeSlot; }
 	void HoverTokenOverLastFoundFreeSlot(AQuartoToken* token);
 	void PlaceTokenOnLastFoundFreeSlot(AQuartoToken* token);
-	void PlaceTokenOnSlotIndex(AQuartoToken* token, brU32 slotX, brU32 slotY);
+	void PlaceTokenOnBoardSlot(AQuartoToken* token, brU32 slotX, brU32 slotY);
 
 	QuartoBoardData const& GetData() const { return m_data; }
 

@@ -40,8 +40,9 @@ void AQuartoBoard::BeginPlay()
 
 			//Slot sockets follow the naming, from X0Y0 to X3Y3
 			FString plainString = socketNames[i].GetPlainNameString();
-			m_slotComponents[i]->SetX(TChar<TCHAR>::ConvertCharDigitToInt(plainString[1]));
-			m_slotComponents[i]->SetY(TChar<TCHAR>::ConvertCharDigitToInt(plainString[3]));
+			brU32 x = TChar<TCHAR>::ConvertCharDigitToInt(plainString[1]);
+			brU32 y = TChar<TCHAR>::ConvertCharDigitToInt(plainString[3]);
+			m_slotComponents[i]->SetCoordinates({ x, y });
 		}
 	}
 	else
@@ -116,11 +117,12 @@ void AQuartoBoard::PlaceTokenOnLastFoundFreeSlot(AQuartoToken* token)
 	token->SetIsPlacedOnBoard(true);
 	token->SetActorLocation(m_lastFoundFreeSlot->GetComponentLocation());
 	m_lastFoundFreeSlot->SetIsFree(false);
-	m_data.SetTokenOnBoard(m_lastFoundFreeSlot->GetX(), m_lastFoundFreeSlot->GetY(), token->GetData());
+	m_data.SetTokenOnBoard(m_lastFoundFreeSlot->GetCoordinates(), token->GetData());
 }
 
-void AQuartoBoard::PlaceTokenOnSlotIndex(AQuartoToken* token, brU32 slotX, brU32 slotY)
+void AQuartoBoard::PlaceTokenOnBoardSlot(AQuartoToken* token, brU32 slotX, brU32 slotY)
 {
+	
 	// find slot
 	// TODO
 	

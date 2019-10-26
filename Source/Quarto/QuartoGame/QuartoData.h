@@ -2,6 +2,7 @@
 
 #include "Common/UnrealCommon.h"
 #include "QuartoCommon.h"
+#include <tuple>
 
 struct QuartoTokenData
 {
@@ -32,6 +33,18 @@ private:
 	brU32 m_propertiesBitmask;
 };
 
+struct QuartoBoardSlotCoordinates
+{
+	QuartoBoardSlotCoordinates() : X(0), Y(0) {}
+	QuartoBoardSlotCoordinates(brU32 x, brU32 y) : X(x), Y(y) {}
+
+	bool operator==(QuartoBoardSlotCoordinates const& other) const;
+	
+	constexpr brBool AreValid() const noexcept { return X < QUARTO_BOARD_SIZE_X && Y < QUARTO_BOARD_SIZE_Y; };
+
+	brU32 X, Y;
+};
+
 struct QuartoBoardData
 {
 	enum class GameStatus
@@ -41,15 +54,16 @@ struct QuartoBoardData
 	};
 
 	brU32 GetNumberOfFreeSlots() const;
-	TArray<brU32> GetEmptySlotIndices() const;
+	TArray<QuartoBoardSlotCoordinates> GetEmptySlotCoordinates() const;
 	TArray<QuartoTokenData> GetFreeTokens() const;
 	GameStatus GetStatus() const;
-	
 
-	void SetTokenOnBoard(brU32 slotIndex, QuartoTokenData const& token);
-	void SetTokenOnBoard(brU32 slotX, brU32 slotY, QuartoTokenData const& token);
+	void SetTokenOnBoard(QuartoBoardSlotCoordinates coordinates, QuartoTokenData const& token);
 	void Reset();
 
 private:
+	static QuartoBoardSlotCoordinates ConvertIndexToSlotCoordinates(brU32 slotIndex);
+	static brU32 ConvertCoordinatesToSlotIndex(QuartoBoardSlotCoordinates const& coordinates);
+	
 	QuartoTokenData m_tokensOnBoardGrid[QUARTO_BOARD_AVAILABLE_SLOTS]; //xDim, yDim = 4
 };
