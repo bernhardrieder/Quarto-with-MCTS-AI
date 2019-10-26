@@ -28,7 +28,7 @@ class MonteCarloTreeSearch
 		Node& GetRandomChild();
 		
 		State State;
-		Node* Parent;
+		Node* Parent = nullptr;
 		TArray<Node> Children;
 	};
 	
@@ -37,14 +37,14 @@ public:
 	
 protected:
 	// Selects the most promising node outgoing from this node
-	static Node& Select(Node& node);
+	static Node* Select(Node* node);
 	// Expands the given node with new possible nodes
-	static void Expand(Node& node, PlayerId playerId, PlayerId opponentId);
-	// Simulates a random play
-	static PlayerId Simulate(Node& node, PlayerId playerId, PlayerId opponentId);
-	// Backpropagate 
-	static void BackPropagate(Node& node, PlayerId playerId);
+	static void Expand(Node* node, PlayerId playerId, PlayerId opponentId);
+	// Simulates a random play and returns the winner
+	static PlayerId Simulate(Node* node, PlayerId playerId, PlayerId opponentId);
+	// Backpropagates the results
+	static void BackPropagate(Node* node, PlayerId playerId);
 
-	static Node& FindBestNodeWithUct(Node& node);
+	static Node* FindBestNodeWithUct(Node* node);
 
 };

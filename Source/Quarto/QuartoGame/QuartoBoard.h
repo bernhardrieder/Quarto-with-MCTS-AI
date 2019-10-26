@@ -33,13 +33,15 @@ public:
 	bool CanFindFreeSlot(const FHitResult& hitResult, brBool bDrawDebugHelpers);
 	UQuartoBoardSlotComponent* GetLastFoundFreeSlot() const { return m_lastFoundFreeSlot; }
 	void HoverTokenOverLastFoundFreeSlot(AQuartoToken* token);
+	void HoverTokenOverSlot(AQuartoToken* token, QuartoBoardSlotCoordinates const& slotCoordinates);
 	void PlaceTokenOnLastFoundFreeSlot(AQuartoToken* token);
-	void PlaceTokenOnBoardSlot(AQuartoToken* token, brU32 slotX, brU32 slotY);
+	void PlaceTokenOnBoardSlot(AQuartoToken* token, QuartoBoardSlotCoordinates const& slotCoordinates);
 
 	QuartoBoardData const& GetData() const { return m_data; }
 
 protected:
 	void BeginPlay() override;
+	UQuartoBoardSlotComponent* FindSlotComponent(QuartoBoardSlotCoordinates const& coordinates);
 
 private:
 	AQuartoGame* m_ownerGame;

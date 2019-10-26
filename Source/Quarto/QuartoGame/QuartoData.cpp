@@ -43,15 +43,7 @@ bool QuartoBoardSlotCoordinates::operator==(QuartoBoardSlotCoordinates const& ot
 
 brU32 QuartoBoardData::GetNumberOfFreeSlots() const
 {
-	brU32 count = 0;
-	for (auto& tokenData : m_tokensOnBoardGrid)
-	{
-		if (tokenData.IsValid())
-		{
-			++count;
-		}
-	}
-	return count;
+	return GetEmptySlotCoordinates().Num();
 }
 
 TArray<QuartoBoardSlotCoordinates> QuartoBoardData::GetEmptySlotCoordinates() const
@@ -149,6 +141,12 @@ QuartoBoardData::GameStatus QuartoBoardData::GetStatus() const
 		{
 			return GameStatus::End;
 		}
+	}
+
+	//draw!
+	if(GetNumberOfFreeSlots() == 0 || GetFreeTokens().Num() == 0)
+	{
+		return GameStatus::End;
 	}
 
 	return GameStatus::InProgress;

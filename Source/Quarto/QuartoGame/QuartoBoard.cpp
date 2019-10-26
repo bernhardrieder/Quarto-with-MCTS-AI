@@ -51,6 +51,11 @@ void AQuartoBoard::BeginPlay()
 	}
 }
 
+UQuartoBoardSlotComponent* AQuartoBoard::FindSlotComponent(QuartoBoardSlotCoordinates const& coordinates)
+{
+	return *(m_slotComponents.FindByPredicate([&coordinates](UQuartoBoardSlotComponent* comp) {return comp && comp->GetCoordinates() == coordinates; }));
+}
+
 void AQuartoBoard::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
@@ -99,31 +104,35 @@ bool AQuartoBoard::CanFindFreeSlot(const FHitResult& hitResult, brBool bDrawDebu
 
 void AQuartoBoard::HoverTokenOverLastFoundFreeSlot(AQuartoToken* token)
 {
-	if(!m_lastFoundFreeSlot || !token)
+	HoverTokenOverSlot(token, m_lastFoundFreeSlot->GetCoordinates());
+}
+
+void AQuartoBoard::HoverTokenOverSlot(AQuartoToken* token, QuartoBoardSlotCoordinates const& slotCoordinates)
+{
+	UQuartoBoardSlotComponent* slotComponent = FindSlotComponent(slotCoordinates);
+	if (!slotComponent || !token)
 	{
 		return;
 	}
 
-	token->StartHoverOver(m_lastFoundFreeSlot->GetComponentLocation());
+	token->StartHoverOver(slotComponent->GetComponentLocation());
 }
 
 void AQuartoBoard::PlaceTokenOnLastFoundFreeSlot(AQuartoToken* token)
 {
-	if(!token || !m_lastFoundFreeSlot || !m_lastFoundFreeSlot->IsFree())
+	PlaceTokenOnBoardSlot(token, m_lastFoundFreeSlot->GetCoordinates());
+}
+
+void AQuartoBoard::PlaceTokenOnBoardSlot(AQuartoToken* token, QuartoBoardSlotCoordinates const& slotCoordinates)
+{
+	UQuartoBoardSlotComponent* slotComponent = FindSlotComponent(slotCoordinates);
+	if (!token || !slotComponent || !slotComponent->IsFree())
 	{
 		return;
 	}
-
+	
 	token->SetIsPlacedOnBoard(true);
-	token->SetActorLocation(m_lastFoundFreeSlot->GetComponentLocation());
-	m_lastFoundFreeSlot->SetIsFree(false);
-	m_data.SetTokenOnBoard(m_lastFoundFreeSlot->GetCoordinates(), token->GetData());
-}
-
-void AQuartoBoard::PlaceTokenOnBoardSlot(AQuartoToken* token, brU32 slotX, brU32 slotY)
-{
-	
-	// find slot
-	// TODO
-	
+	token->SetActorLocation(slotComponent->GetComponentLocation());
+	slotComponent->SetIsFree(false);
+	m_data.SetTokenOnBoard(slotCoordinates, token->GetData());
 }

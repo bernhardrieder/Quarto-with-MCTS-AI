@@ -90,7 +90,7 @@ void AQuartoGame::HandleGameStart()
 	}
 	m_gameState = EGameState::TokenSelection;
 	m_players[0] = EPlayer::Player_1;
-	m_players[1] = EPlayer::Player_2;
+	m_players[1] = EPlayer::NPC_1;
 	m_currentPlayer = m_players[0];
 }
 
@@ -164,6 +164,16 @@ void AQuartoGame::HandleNpcMoveSelection()
 		QuartoBoardSlotCoordinates moveCoordinates = std::get<1>(move);
 
 		AQuartoToken** token = m_gameTokens.FindByPredicate([&moveToken](AQuartoToken* t) { return t && t->GetData() == moveToken; });
+		if(token && *token)
+		{
+			m_gameBoard->HoverTokenOverSlot(*token, moveCoordinates);
+			//wait
+			m_gameBoard->PlaceTokenOnBoardSlot(*token, moveCoordinates);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("ERROR: NPC couldn't find token to play!"));
+		}
 	}
 	
 	m_gameState = EGameState::DrawEnd;

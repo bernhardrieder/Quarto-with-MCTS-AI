@@ -20,6 +20,13 @@ void MonteCarloTreeSearch::State::RandomPlay()
 {
 	auto const emptySlotCoordinates = BoardData.GetEmptySlotCoordinates();
 	auto const freeTokens = BoardData.GetFreeTokens();
+
+	if(emptySlotCoordinates.Num() == 0 || freeTokens.Num() == 0)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("MCTS: Can't play a random play!"));
+		return;
+	}
+
 	brU32 const randomSlotIdx = FMath::RandRange(0, emptySlotCoordinates.Num()-1);
 	brU32 const randomTokenIdx = FMath::RandRange(0, freeTokens.Num()-1);
 	BoardData.SetTokenOnBoard(emptySlotCoordinates[randomSlotIdx], freeTokens[randomTokenIdx]);
@@ -69,17 +76,17 @@ std::tuple<QuartoTokenData, QuartoBoardSlotCoordinates> MonteCarloTreeSearch::Fi
 	root.State.PlayerId = opponentId;
 
 	// can be replaced by time 
-	for(brU32 sim = 0; sim < 100; ++sim)
+	for(brU32 sim = 0; sim < 10000; ++sim)
 	{
-		Node& promisingNode = Select(root);
-		if(promisingNode.State.BoardData.GetStatus() == QuartoBoardData::GameStatus::InProgress)
+		Node* promisingNode = Select(&root);
+		if(promisingNode && promisingNode->State.BoardData.GetStatus() == QuartoBoardData::GameStatus::InProgress)
 		{
 			Expand(promisingNode, playerId, opponentId);
 		}
-		Node& nodeToExplore = promisingNode;
-		if(promisingNode.Children.Num() > 0)
+		Node* nodeToExplore = promisingNode;
+		if(promisingNode && promisingNode->Children.Num() > 0)
 		{
-			nodeToExplore = promisingNode.GetRandomChild();
+			nodeToExplore = &promisingNode->GetRandomChild();
 		}
 		PlayerId const winnerId = Simulate(nodeToExplore, playerId, opponentId);
 		BackPropagate(nodeToExplore, winnerId);
@@ -105,41 +112,54 @@ std::tuple<QuartoTokenData, QuartoBoardSlotCoordinates> MonteCarloTreeSearch::Fi
 	return std::make_tuple(oldFreeTokens[0], oldEmptySlotCoordinates[0]);
 }
 
-MonteCarloTreeSearch::Node& MonteCarloTreeSearch::Select(Node& node)
+MonteCarloTreeSearch::Node* MonteCarloTreeSearch::Select(Node* node)
 {
-	Node& result = node;
-	while (result.Children.Num() > 0)
+	Node* result = node;
+	while (result && result->Children.Num() > 0)
 	{
 		result = FindBestNodeWithUct(result);
 	}
 	return result;
 }
 
-void MonteCarloTreeSearch::Expand(Node& node, PlayerId playerId, PlayerId opponentId)
+void MonteCarloTreeSearch::Expand(Node* node, PlayerId playerId, PlayerId opponentId)
 {
-	TArray<State> possibleStates = node.State.GetAllPossibleStates();
+	if(!node)
+	{
+		return;
+	}
+	
+	TArray<State> possibleStates = node->State.GetAllPossibleStates();
 	for(State& state : possibleStates)
 	{
-		Node newNode;
-		newNode.State = state;
-		newNode.State.PlayerId = node.State.PlayerId;
-		newNode.State.ReplacePlayerIdWithUnused(playerId, opponentId);
-		newNode.Parent = &node;
-		node.Children.Add(newNode);
+		Node child;
+		child.State = state;
+		child.State.PlayerId = node->State.PlayerId;
+		child.State.ReplacePlayerIdWithUnused(playerId, opponentId);
+		child.Parent = node;
+		node->Children.Add(child);
 	}
 }
 
-MonteCarloTreeSearch::PlayerId MonteCarloTreeSearch::Simulate(Node& node, PlayerId playerId, PlayerId opponentId)
+MonteCarloTreeSearch::PlayerId MonteCarloTreeSearch::Simulate(Node* node, PlayerId playerId, PlayerId opponentId)
 {
-	auto status = node.State.BoardData.GetStatus();
-	if(status == QuartoBoardData::GameStatus::End 
-		&& playerId != node.State.PlayerId)
+	if (!node)
 	{
-		node.Parent->State.WinScore = INT_MIN;
-		return node.State.PlayerId;
+		return 0;
+	}
+	
+	auto status = node->State.BoardData.GetStatus();
+	if(status == QuartoBoardData::GameStatus::End 
+		&& playerId != node->State.PlayerId)
+	{
+		if(node->Parent)
+		{
+			node->Parent->State.WinScore = INT_MIN;
+		}
+		return node->State.PlayerId;
 	}
 
-	State tmpState = node.State;
+	State tmpState = node->State;
 	while(status == QuartoBoardData::GameStatus::InProgress)
 	{
 		tmpState.ReplacePlayerIdWithUnused(playerId, opponentId);
@@ -150,9 +170,9 @@ MonteCarloTreeSearch::PlayerId MonteCarloTreeSearch::Simulate(Node& node, Player
 	return tmpState.PlayerId;
 }
 
-void MonteCarloTreeSearch::BackPropagate(Node& node, PlayerId playerId)
+void MonteCarloTreeSearch::BackPropagate(Node* node, PlayerId playerId)
 {
-	Node* tmpNode = &node;
+	Node* tmpNode = node;
 	while(tmpNode)
 	{
 		State& state = tmpNode->State;
@@ -165,8 +185,13 @@ void MonteCarloTreeSearch::BackPropagate(Node& node, PlayerId playerId)
 	}
 }
 
-MonteCarloTreeSearch::Node& MonteCarloTreeSearch::FindBestNodeWithUct(Node& node)
+MonteCarloTreeSearch::Node* MonteCarloTreeSearch::FindBestNodeWithUct(Node* node)
 {
+	if(!node)
+	{
+		return nullptr;
+	}
+	
 	static auto uctValueFct = [](brU32 totalVisit, brFloat nodeWinScore, brU32 nodeVisit) -> brFloat
 	{
 		static brFloat explorationParam = 1.41f; // sqrt(2)
@@ -179,15 +204,15 @@ MonteCarloTreeSearch::Node& MonteCarloTreeSearch::FindBestNodeWithUct(Node& node
 		return (nodeWinScore / nodeVisit) + explorationParam * FMath::Sqrt(FMath::Loge(totalVisit) / static_cast<brFloat>(nodeVisit));
 	};
 
-	Node& bestNode = node;
-	brU32 const parentVisit = node.State.VisitCount;
+	Node* bestNode = node;
+	brU32 const parentVisit = node->State.VisitCount;
 	brFloat highestUctValue = 0.f;
-	for(Node& childNode : node.Children)
+	for(Node& childNode : node->Children)
 	{
 		brFloat const uctValue = uctValueFct(parentVisit, childNode.State.WinScore, childNode.State.VisitCount);
 		if(uctValue > highestUctValue)
 		{
-			bestNode = childNode;
+			bestNode = &childNode;
 			highestUctValue = uctValue;
 		}
 	}
