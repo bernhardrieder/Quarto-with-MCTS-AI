@@ -3,13 +3,13 @@
 TArray<MonteCarloTreeSearch::State> MonteCarloTreeSearch::State::GetAllPossibleStates() const
 {
 	TArray<State> states;
-	for(brU32 slotIndex : BoardData.GetEmptySlotIndices())
+	for(auto const& slotCoordinates : BoardData.GetEmptySlotCoordinates())
 	{
 		for(auto token : BoardData.GetFreeTokens())
 		{
 			State newState;
 			newState.BoardData = BoardData;
-			newState.BoardData.SetTokenOnBoard(slotIndex, token);
+			newState.BoardData.SetTokenOnBoard(slotCoordinates, token);
 			states.Add(newState);
 		}
 	}
@@ -18,11 +18,11 @@ TArray<MonteCarloTreeSearch::State> MonteCarloTreeSearch::State::GetAllPossibleS
 
 void MonteCarloTreeSearch::State::RandomPlay()
 {
-	auto const emptySlotIndices = BoardData.GetEmptySlotIndices();
+	auto const emptySlotCoordinates = BoardData.GetEmptySlotCoordinates();
 	auto const freeTokens = BoardData.GetFreeTokens();
-	brU32 const randomSlotIdx = FMath::RandRange(0, emptySlotIndices.Num()-1);
+	brU32 const randomSlotIdx = FMath::RandRange(0, emptySlotCoordinates.Num()-1);
 	brU32 const randomTokenIdx = FMath::RandRange(0, freeTokens.Num()-1);
-	BoardData.SetTokenOnBoard(emptySlotIndices[randomSlotIdx], freeTokens[randomTokenIdx]);
+	BoardData.SetTokenOnBoard(emptySlotCoordinates[randomSlotIdx], freeTokens[randomTokenIdx]);
 }
 
 void MonteCarloTreeSearch::State::ReplacePlayerIdWithUnused(MonteCarloTreeSearch::PlayerId id1,
@@ -62,7 +62,7 @@ MonteCarloTreeSearch::Node& MonteCarloTreeSearch::Node::GetRandomChild()
 	return Children[FMath::RandRange(0, Children.Num() - 1)];
 }
 
-std::tuple<QuartoTokenData, brU32> MonteCarloTreeSearch::FindNextMove(QuartoBoardData const& currentBoard, PlayerId playerId, PlayerId opponentId)
+std::tuple<QuartoTokenData, QuartoBoardSlotCoordinates> MonteCarloTreeSearch::FindNextMove(QuartoBoardData const& currentBoard, PlayerId playerId, PlayerId opponentId)
 {
 	Node root;
 	root.State.BoardData = currentBoard;
@@ -85,20 +85,24 @@ std::tuple<QuartoTokenData, brU32> MonteCarloTreeSearch::FindNextMove(QuartoBoar
 		BackPropagate(nodeToExplore, winnerId);
 	}
 
-	auto oldEmptySlots = currentBoard.GetEmptySlotIndices();
+	auto oldEmptySlotCoordinates = currentBoard.GetEmptySlotCoordinates();
 	auto oldFreeTokens = currentBoard.GetFreeTokens();
 	
 	auto& winnerBoard = root.GetChildWithHighestScore().State.BoardData;
-	for(auto& slotIndex : winnerBoard.GetEmptySlotIndices())
+	for(auto& slotCoordinates : winnerBoard.GetEmptySlotCoordinates())
 	{
-		oldEmptySlots.Remove(slotIndex);
+		oldEmptySlotCoordinates.Remove(slotCoordinates);
 	}
 	for(auto& token : winnerBoard.GetFreeTokens())
 	{
 		oldFreeTokens.Remove(token);
 	}
-	
-	return std::make_tuple(oldFreeTokens[0], oldEmptySlots[0]);
+
+	if(oldFreeTokens.Num() < 1 || oldEmptySlotCoordinates.Num() < 1)
+	{
+		UE_LOG(LogTemp, Error, TEXT("ERROR: There are no found tokens or slotcoordinates found for the Monte Carlo Tree Search move search!!"));
+	}
+	return std::make_tuple(oldFreeTokens[0], oldEmptySlotCoordinates[0]);
 }
 
 MonteCarloTreeSearch::Node& MonteCarloTreeSearch::Select(Node& node)

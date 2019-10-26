@@ -33,7 +33,7 @@ class MonteCarloTreeSearch
 	};
 	
 public:
-	static std::tuple<QuartoTokenData, brU32> FindNextMove(QuartoBoardData const& currentBoard, PlayerId playerId, PlayerId opponentId);
+	static std::tuple<QuartoTokenData, QuartoBoardSlotCoordinates> FindNextMove(QuartoBoardData const& currentBoard, PlayerId playerId, PlayerId opponentId);
 	
 protected:
 	// Selects the most promising node outgoing from this node
