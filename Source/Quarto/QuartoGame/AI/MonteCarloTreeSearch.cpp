@@ -114,6 +114,12 @@ internal::MCTSThread::MCTSThread(brFloat maxMoveSearchTime)
 
 internal::MCTSThread::~MCTSThread()
 {
+	MCTSThread::Stop();
+	if(m_thread)
+	{
+		m_thread->WaitForCompletion();
+	}
+	
 	if(m_semaphore)
 	{
 		//Cleanup the FEvent
