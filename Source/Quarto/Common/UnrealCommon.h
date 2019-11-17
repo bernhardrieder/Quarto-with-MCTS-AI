@@ -17,4 +17,6 @@ using brS32 = int32;
 using brS16 = int16;
 using brS8 = int8;
 
+using PlayerId = brU32;
+
 #define brFloatMax FLT_MAX

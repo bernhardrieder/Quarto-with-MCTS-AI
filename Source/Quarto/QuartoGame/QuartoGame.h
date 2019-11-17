@@ -12,6 +12,14 @@ class AQuartoBoard;
 class AQuartoToken;
 class UQuartoBoardSlotComponent;
 
+namespace ai
+{
+	namespace mcts
+	{
+		class MonteCarloTreeSearch;
+	}
+}
+
 UCLASS(config=Game)
 class AQuartoGame : public APawn
 {
@@ -49,6 +57,7 @@ public:
 
 protected:
 	void BeginPlay() override;
+	void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 private:
 	void HandleGameStart();
@@ -71,11 +80,12 @@ private:
 	AQuartoToken* FindToken(const FHitResult& hitResult) const;
 	EPlayer GetNextPlayer(EPlayer currentPlayer);
 	static constexpr brBool IsPlayerNpc(EPlayer player) { return player == EPlayer::NPC_1 || player == EPlayer::NPC_2; }
-	
+
 private:
 	EGameState m_gameState;
 	AQuartoToken* m_pickedUpToken;
 	AQuartoToken* m_focusedToken;
 	EPlayer m_players[QUARTO_NUM_OF_PLAYERS];
 	EPlayer m_currentPlayer;
+	ai::mcts::MonteCarloTreeSearch* m_mctsAi;
 };

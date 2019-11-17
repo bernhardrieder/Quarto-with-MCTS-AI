@@ -12,12 +12,12 @@
 #include "AI/MonteCarloTreeSearch.h"
 
 AQuartoGame::AQuartoGame(const FObjectInitializer& ObjectInitializer)
-: Super(ObjectInitializer)
-, m_gameBoard(nullptr)
-, m_gameState(EGameState::GameStart)
-, m_pickedUpToken(nullptr)
-, m_focusedToken(nullptr)
-, m_currentPlayer(EPlayer::Player_1)
+	: Super(ObjectInitializer)
+	, m_gameBoard(nullptr)
+	, m_gameState(EGameState::GameStart)
+	, m_pickedUpToken(nullptr)
+	, m_focusedToken(nullptr)
+	, m_currentPlayer(EPlayer::Player_1)
 {
 	AutoPossessPlayer = EAutoReceiveInput::Player0;
 }
@@ -26,6 +26,8 @@ void AQuartoGame::BeginPlay()
 {
 	Super::BeginPlay();
 
+	m_mctsAi = new ai::mcts::MonteCarloTreeSearch(5.f);
+	
 	for (AQuartoToken* token : m_gameTokens)
 	{
 		token->m_ownerGame = this;
@@ -39,6 +41,12 @@ void AQuartoGame::BeginPlay()
 	{
 		UE_LOG(LogTemp, Error, TEXT("ERROR: No gameboard assigned to AQuartoGame %s"), *GetName());
 	}
+}
+
+void AQuartoGame::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	delete m_mctsAi;
+	Super::EndPlay(EndPlayReason);
 }
 
 void AQuartoGame::Tick(float DeltaSeconds)
@@ -154,12 +162,22 @@ void AQuartoGame::HandleNpcMoveSelection()
 {
 	if(m_gameBoard)
 	{
-		std::tuple<QuartoTokenData, QuartoBoardSlotCoordinates> move = 
-			MonteCarloTreeSearch::FindNextMove(
-				m_gameBoard->GetData(), 
-				static_cast<brU32>(m_currentPlayer), 
+		if(!m_mctsAi->IsLookingForNextMove() && !m_mctsAi->HasFoundNextMove())
+		{
+			m_mctsAi->FindNextMove(
+				m_gameBoard->GetData(),
+				static_cast<brU32>(m_currentPlayer),
 				static_cast<brU32>(GetNextPlayer(m_currentPlayer))
 			);
+		}
+		
+		if(m_mctsAi->IsLookingForNextMove() && !m_mctsAi->HasFoundNextMove())
+		{
+			// do random stuff
+			return;
+		}
+		
+		std::tuple<QuartoTokenData, QuartoBoardSlotCoordinates> move = m_mctsAi->GetNextMove();
 		QuartoTokenData& moveToken = std::get<0>(move);
 		QuartoBoardSlotCoordinates moveCoordinates = std::get<1>(move);
 
