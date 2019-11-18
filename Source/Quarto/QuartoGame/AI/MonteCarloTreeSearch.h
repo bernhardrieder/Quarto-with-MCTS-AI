@@ -6,8 +6,6 @@
 #include "ScopedEvent.h"
 #include "ThreadSafeBool.h"
 
-//https://www.baeldung.com/java-monte-carlo-tree-search
-
 namespace ai
 {
 	namespace mcts

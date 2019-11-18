@@ -45,12 +45,21 @@ class AQuartoGame : public APawn
 	};
 	
 protected:
-	UPROPERTY(EditInstanceOnly, Category = "Game Components", BlueprintReadOnly, meta = (DisplayName = "Game Board"))
+	UPROPERTY(EditInstanceOnly, Category = "Components", BlueprintReadOnly, meta = (DisplayName = "Game Board"))
 	AQuartoBoard* m_gameBoard;
 
-	UPROPERTY(EditInstanceOnly, Category = "Game Components", BlueprintReadOnly, meta = (DisplayName = "Base Tokens"))
+	UPROPERTY(EditInstanceOnly, Category = "Components", BlueprintReadOnly, meta = (DisplayName = "Base Tokens"))
 	TArray<AQuartoToken*> m_gameTokens;
 
+	UPROPERTY(EditInstanceOnly, Category = "Settings", BlueprintReadWrite, meta = (DisplayName = "Player 1"))
+	EQuartoPlayer m_player1;
+
+	UPROPERTY(EditInstanceOnly, Category = "Settings", BlueprintReadWrite, meta = (DisplayName = "Player 2"))
+	EQuartoPlayer m_player2;
+
+	UPROPERTY(EditInstanceOnly, Category = "AI Settings", BlueprintReadWrite, meta = (DisplayName = "Max time to think in seconds"))
+	float m_maxAiThinkTime;
+	
 public:
 	void Tick(float DeltaSeconds) override;
 	void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;

@@ -14,10 +14,14 @@
 AQuartoGame::AQuartoGame(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 	, m_gameBoard(nullptr)
+	, m_player1(EQuartoPlayer::Human)
+	, m_player2(EQuartoPlayer::NPC)
+	, m_maxAiThinkTime(5.0f)
 	, m_gameState(EGameState::GameStart)
 	, m_pickedUpToken(nullptr)
 	, m_focusedToken(nullptr)
 	, m_currentPlayer(EPlayer::Player_1)
+	, m_mctsAi(nullptr)
 {
 	AutoPossessPlayer = EAutoReceiveInput::Player0;
 }
@@ -26,7 +30,7 @@ void AQuartoGame::BeginPlay()
 {
 	Super::BeginPlay();
 
-	m_mctsAi = new ai::mcts::MonteCarloTreeSearch(5.f);
+	m_mctsAi = new ai::mcts::MonteCarloTreeSearch(m_maxAiThinkTime);
 	
 	for (AQuartoToken* token : m_gameTokens)
 	{
@@ -96,10 +100,13 @@ void AQuartoGame::HandleGameStart()
 			token->Reset();
 		}
 	}
-	m_gameState = EGameState::TokenSelection;
-	m_players[0] = EPlayer::Player_1;
-	m_players[1] = EPlayer::NPC_1;
-	m_currentPlayer = m_players[0];
+
+	m_players[0] = m_player1 == EQuartoPlayer::Human ? EPlayer::Player_1 : EPlayer::NPC_1;
+	m_players[1] = m_player2 == EQuartoPlayer::Human ? EPlayer::Player_2 : EPlayer::NPC_2;
+	m_currentPlayer = m_players[static_cast<int>(FMath::RandBool())];
+
+	m_gameState = m_currentPlayer == EPlayer::Player_1 || m_currentPlayer == EPlayer::Player_2
+						? EGameState::TokenSelection : EGameState::NpcMoveSelection;
 }
 
 void AQuartoGame::HandleDrawEnd()

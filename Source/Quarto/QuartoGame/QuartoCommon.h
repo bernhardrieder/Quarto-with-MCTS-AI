@@ -8,6 +8,13 @@
 #define QUARTO_BOARD_AVAILABLE_SLOTS 16
 
 UENUM(BlueprintType)
+enum class EQuartoPlayer : uint8 /*brU8 -> UE header tool doesn't like it*/
+{
+	Human 	UMETA(DisplayName = "Human"),
+	NPC		UMETA(DisplayName = "NPC")
+};
+
+UENUM(BlueprintType)
 enum class EQuartoTokenColor : uint8 /*brU8 -> UE header tool doesn't like it*/
 {
 	Color1 = 0x01 	UMETA(DisplayName = "Color1"),
