@@ -7,6 +7,8 @@
 #define QUARTO_BOARD_SIZE_Y 4
 #define QUARTO_BOARD_AVAILABLE_SLOTS 16
 
+#define GETENUMSTRING(etype, evalue) ( (FindObject<UEnum>(ANY_PACKAGE, TEXT(etype), true) != nullptr) ? FindObject<UEnum>(ANY_PACKAGE, TEXT(etype), true)->GetEnumName((int32)evalue) : FString("Invalid - are you sure enum uses UENUM() macro?") )
+
 UENUM(BlueprintType)
 enum class EQuartoPlayer : uint8 /*brU8 -> UE header tool doesn't like it*/
 {

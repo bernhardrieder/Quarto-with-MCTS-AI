@@ -1,5 +1,11 @@
 // Copyright 1998-2019 Epic Games, Inc. All Rights Reserved.
 
+
+
+
+
+
+
 #pragma once
 
 #include "Common/UnrealCommon.h"
@@ -20,22 +26,33 @@ namespace ai
 	}
 }
 
+/*	----- Quarto Gameflow ----- (http://www.ludoteka.com/quarto-en.html)
+ *	Players move alternatively, placing one piece on the board; once inserted, pieces cannot be moved.
+ *	One of the more special characteristics of this game is that the choice of the piece to be placed on the board is not made by the same player who places it; it is the opponent who, after doing his move, decides which will be the next piece to place.
+ *	So, each turn consists of two actions:
+ *		1. Place on the board the piece given by the opponent.
+ *		2. Give to the opponent the piece to be placed in the next move.
+ *	In the first turn of the game, the player who starts has only to choose one piece for the opponent.
+ */
+UENUM(BlueprintType)
+enum class EQuartoGameState : uint8
+{
+	GameStart,
+	SlotSelection_Human,
+	SlotSelection_NPC,
+	TokenSelection_Human,
+	TokenSelection_NPC,
+	GameBoardValidation,
+	DrawEnd,
+	GameEnd
+};
+
 UCLASS(config=Game)
 class AQuartoGame : public APawn
 {
 	GENERATED_UCLASS_BODY()
 
-	enum class EGameState : brU8
-	{
-		GameStart,
-		TokenSelection,
-		SlotSelection,
-		NpcMoveSelection,
-		DrawEnd,
-		GameEnd
-	};
-
-	enum class EPlayer : brU32
+	enum class EPlayer : uint8
 	{
 		Player_1 = 0,
 		Player_2,
@@ -72,16 +89,19 @@ private:
 	void HandleGameStart();
 	void HandleDrawEnd();
 	void HandleGameEnd();
-	void HandleTokenSelection();
-	void HandleSlotSelection();
-	void HandleNpcMoveSelection();
+	void HandleTokenSelection_Human();
+	void HandleTokenSelection_NPC();
+	void HandleSlotSelection_Human();
+	void HandleSlotSelection_NPC();
+	void HandleGameBoardValidation();
 
 	/** Game Specifics */
 
 	/** Player Input */
 	void HandlePlayerSelectInput();
 	void PickUpFocusedToken();
-	void DiscardPickedUpToken();
+	void PickUpToken(AQuartoToken* token);
+	//void DiscardPickedUpToken();
 	void PlaceTokenOnFocusedSlot();
 
 	/** Helper */
@@ -89,12 +109,15 @@ private:
 	AQuartoToken* FindToken(const FHitResult& hitResult) const;
 	EPlayer GetNextPlayer(EPlayer currentPlayer);
 	static constexpr brBool IsPlayerNpc(EPlayer player) { return player == EPlayer::NPC_1 || player == EPlayer::NPC_2; }
-
+	static FString GetPlayerName(EPlayer player);
+	
 private:
-	EGameState m_gameState;
+	EQuartoGameState m_gameState;
+	EQuartoGameState m_oldGameState;
 	AQuartoToken* m_pickedUpToken;
 	AQuartoToken* m_focusedToken;
 	EPlayer m_players[QUARTO_NUM_OF_PLAYERS];
 	EPlayer m_currentPlayer;
 	ai::mcts::MonteCarloTreeSearch* m_mctsAi;
+
 };

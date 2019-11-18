@@ -15,9 +15,10 @@ AQuartoGame::AQuartoGame(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 	, m_gameBoard(nullptr)
 	, m_player1(EQuartoPlayer::Human)
-	, m_player2(EQuartoPlayer::NPC)
+	, m_player2(EQuartoPlayer::Human)
 	, m_maxAiThinkTime(5.0f)
-	, m_gameState(EGameState::GameStart)
+	, m_gameState(EQuartoGameState::GameStart)
+	, m_oldGameState(EQuartoGameState::GameEnd)
 	, m_pickedUpToken(nullptr)
 	, m_focusedToken(nullptr)
 	, m_currentPlayer(EPlayer::Player_1)
@@ -57,24 +58,36 @@ void AQuartoGame::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
+	if(m_oldGameState != m_gameState)
+	{
+		UE_LOG(LogTemp, Display, TEXT("GameLoop: %s - %s"), *GETENUMSTRING("EQuartoGameState", m_gameState), *GetPlayerName(m_currentPlayer));
+		m_oldGameState = m_gameState;
+	}
+	
 	switch(m_gameState)
 	{
-	case EGameState::GameStart:
+	case EQuartoGameState::GameStart:
 		HandleGameStart();
 		break;
-	case EGameState::TokenSelection: 
-		HandleTokenSelection();
+	case EQuartoGameState::SlotSelection_Human: 
+		HandleSlotSelection_Human();
 		break;
-	case EGameState::SlotSelection: 
-		HandleSlotSelection();
+	case EQuartoGameState::SlotSelection_NPC:
+		HandleSlotSelection_NPC();
 		break;
-	case EGameState::NpcMoveSelection:
-		HandleNpcMoveSelection();
+	case EQuartoGameState::TokenSelection_Human:
+		HandleTokenSelection_Human();
 		break;
-	case EGameState::DrawEnd: 
+	case EQuartoGameState::TokenSelection_NPC:
+		HandleTokenSelection_NPC();
+		break;
+	case EQuartoGameState::DrawEnd: 
 		HandleDrawEnd();
 		break;
-	case EGameState::GameEnd: 
+	case EQuartoGameState::GameBoardValidation:
+		HandleGameBoardValidation();
+		break;
+	case EQuartoGameState::GameEnd:
 	default:
 		HandleGameEnd();
 		break;
@@ -86,7 +99,7 @@ void AQuartoGame::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
 	PlayerInputComponent->BindAction("QuartoGame_PlayerSelect", EInputEvent::IE_Pressed, this, &AQuartoGame::HandlePlayerSelectInput);
-	PlayerInputComponent->BindAction("QuartoGame_PlayerAbort", EInputEvent::IE_Pressed, this, &AQuartoGame::DiscardPickedUpToken);
+	//PlayerInputComponent->BindAction("QuartoGame_PlayerAbort", EInputEvent::IE_Pressed, this, &AQuartoGame::DiscardPickedUpToken);
 }
 
 void AQuartoGame::HandleGameStart()
@@ -105,40 +118,22 @@ void AQuartoGame::HandleGameStart()
 	m_players[1] = m_player2 == EQuartoPlayer::Human ? EPlayer::Player_2 : EPlayer::NPC_2;
 	m_currentPlayer = m_players[static_cast<int>(FMath::RandBool())];
 
-	m_gameState = m_currentPlayer == EPlayer::Player_1 || m_currentPlayer == EPlayer::Player_2
-						? EGameState::TokenSelection : EGameState::NpcMoveSelection;
+	m_gameState = IsPlayerNpc(m_currentPlayer) ? EQuartoGameState::TokenSelection_NPC : EQuartoGameState::TokenSelection_Human;
 }
 
 void AQuartoGame::HandleDrawEnd()
 {
-	//evaluate game
-	brBool const isGameWon = m_gameBoard && m_gameBoard->GetData().GetStatus() == QuartoBoardData::GameStatus::End;
-	brBool const canContinuePlaying = m_gameBoard && m_gameBoard->GetData().GetNumberOfFreeSlots() > 0;
-
-	if(isGameWon)
-	{
-		//broadcast event
-	}
-
 	m_currentPlayer = GetNextPlayer(m_currentPlayer);
-
-	if(isGameWon || !canContinuePlaying)
-	{
-		m_gameState = EGameState::GameEnd;
-	}
-	else
-	{
-		m_gameState = IsPlayerNpc(m_currentPlayer) ? EGameState::NpcMoveSelection : EGameState::TokenSelection;
-	}
+	m_gameState = IsPlayerNpc(m_currentPlayer) ? EQuartoGameState::SlotSelection_NPC : EQuartoGameState::SlotSelection_Human;
 }
 
 void AQuartoGame::HandleGameEnd()
 {
 	//broadcast event
-	m_gameState = EGameState::GameStart;
+	m_gameState = EQuartoGameState::GameStart;
 }
 
-void AQuartoGame::HandleTokenSelection()
+void AQuartoGame::HandleTokenSelection_Human()
 {
 	AQuartoToken* token = FindToken(FetchMouseCursorTargetHitResult());
 
@@ -155,7 +150,20 @@ void AQuartoGame::HandleTokenSelection()
 	}
 }
 
-void AQuartoGame::HandleSlotSelection()
+void AQuartoGame::HandleTokenSelection_NPC()
+{
+	//todo: make more sophisticated with AI
+	if (m_gameBoard)
+	{
+		auto const& freeTokens = m_gameBoard->GetData().GetFreeTokens();
+		QuartoTokenData data = freeTokens[FMath::RandRange(0, freeTokens.Num() - 1)];
+		AQuartoToken** token = m_gameTokens.FindByPredicate([&data](AQuartoToken* t) { return t && t->GetData() == data; });
+		PickUpToken(*token);
+	}
+	m_gameState = EQuartoGameState::DrawEnd;
+}
+
+void AQuartoGame::HandleSlotSelection_Human()
 {
 	brBool showDebug = true; // todo: move to imgui
 	if (m_pickedUpToken && m_gameBoard 
@@ -165,8 +173,9 @@ void AQuartoGame::HandleSlotSelection()
 	}
 }
 
-void AQuartoGame::HandleNpcMoveSelection()
+void AQuartoGame::HandleSlotSelection_NPC()
 {
+	//todo: fix this for the correct gameflow! npc can't choose from a token
 	if(m_gameBoard)
 	{
 		if(!m_mctsAi->IsLookingForNextMove() && !m_mctsAi->HasFoundNextMove())
@@ -201,17 +210,40 @@ void AQuartoGame::HandleNpcMoveSelection()
 		}
 	}
 	
-	m_gameState = EGameState::DrawEnd;
+	m_gameState = EQuartoGameState::SlotSelection_NPC;
+}
+
+void AQuartoGame::HandleGameBoardValidation()
+{
+	//evaluate game
+	brBool const isGameWon = m_gameBoard && m_gameBoard->GetData().GetStatus() == QuartoBoardData::GameStatus::End;
+	brBool const canContinuePlaying = m_gameBoard && m_gameBoard->GetData().GetNumberOfFreeSlots() > 0;
+
+	if (isGameWon)
+	{
+		//broadcast event
+	}
+
+	if (isGameWon || !canContinuePlaying)
+	{
+		m_gameState = EQuartoGameState::GameEnd;
+		UE_LOG(LogTemp, Display, TEXT("%s won!"), *GetPlayerName(m_currentPlayer));
+	}
+	else
+	{
+		m_gameState = IsPlayerNpc(m_currentPlayer) ? EQuartoGameState::TokenSelection_NPC : EQuartoGameState::TokenSelection_Human;
+	}
+
 }
 
 void AQuartoGame::HandlePlayerSelectInput()
 {
 	switch(m_gameState)
 	{
-	case EGameState::TokenSelection: 
+	case EQuartoGameState::TokenSelection_Human: 
 		PickUpFocusedToken();
 		break;
-	case EGameState::SlotSelection:
+	case EQuartoGameState::SlotSelection_Human:
 		PlaceTokenOnFocusedSlot();
 		break;
 	default:
@@ -225,22 +257,31 @@ void AQuartoGame::PickUpFocusedToken()
 		&& m_focusedToken 
 		&& !m_focusedToken->IsPlacedOnBoard())
 	{
-		m_pickedUpToken = m_focusedToken;
-		m_focusedToken = nullptr;
-		m_pickedUpToken->StartHoverOver(m_pickedUpToken->GetActorLocation());
-		m_gameState = EGameState::SlotSelection;
+		m_focusedToken->ShowHighlightForPlayer(false);
+		PickUpToken(m_focusedToken);
+		m_gameState = EQuartoGameState::DrawEnd;
 	}
 }
 
-void AQuartoGame::DiscardPickedUpToken()
+void AQuartoGame::PickUpToken(AQuartoToken* token)
 {
-	if(m_pickedUpToken)
+	if(token)
 	{
-		m_pickedUpToken->Reset();
-		m_pickedUpToken = nullptr;
-		m_gameState = EGameState::TokenSelection;
+		m_pickedUpToken = token;
+		m_focusedToken = nullptr;
+		token->StartHoverOver(token->GetActorLocation());
 	}
 }
+
+//void AQuartoGame::DiscardPickedUpToken()
+//{
+//	if(m_pickedUpToken)
+//	{
+//		m_pickedUpToken->Reset();
+//		m_pickedUpToken = nullptr;
+//		m_gameState = EQuartoGameState::TokenSelection_Human;
+//	}
+//}
 
 void AQuartoGame::PlaceTokenOnFocusedSlot()
 {
@@ -250,7 +291,7 @@ void AQuartoGame::PlaceTokenOnFocusedSlot()
 		m_gameBoard->PlaceTokenOnLastFoundFreeSlot(m_pickedUpToken);
 		m_pickedUpToken = nullptr;
 
-		m_gameState = EGameState::DrawEnd;
+		m_gameState = EQuartoGameState::GameBoardValidation;
 	}
 }
 
@@ -268,7 +309,7 @@ FHitResult AQuartoGame::FetchMouseCursorTargetHitResult() const
 
 
 	FCollisionQueryParams queryParams = FCollisionQueryParams::DefaultQueryParam;
-	if(m_gameState == EGameState::SlotSelection)
+	if(m_gameState == EQuartoGameState::SlotSelection_Human)
 	{
 		queryParams.AddIgnoredActor(m_pickedUpToken);
 	}
@@ -304,4 +345,18 @@ AQuartoGame::EPlayer AQuartoGame::GetNextPlayer(EPlayer currentPlayer)
 	}
 
 	return currentPlayer;
+}
+
+FString AQuartoGame::GetPlayerName(EPlayer player)
+{
+	switch(player)
+	{
+		case EPlayer::Player_1: return FString("Player_1");
+		case EPlayer::Player_2: return FString("Player_2");
+		case EPlayer::NPC_1: return FString("NPC_1");
+		case EPlayer::NPC_2: return FString("NPC_2");
+		case EPlayer::Count: 
+		default:
+			return FString("Invalid");
+	}
 }
