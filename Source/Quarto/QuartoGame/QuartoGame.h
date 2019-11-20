@@ -74,8 +74,11 @@ protected:
 	UPROPERTY(EditInstanceOnly, Category = "Settings", BlueprintReadWrite, meta = (DisplayName = "Player 2"))
 	EQuartoPlayer m_player2;
 
-	UPROPERTY(EditInstanceOnly, Category = "AI Settings", BlueprintReadWrite, meta = (DisplayName = "Max time to think in seconds"))
-	float m_maxAiThinkTime;
+	UPROPERTY(EditInstanceOnly, Category = "AI Settings", BlueprintReadWrite, meta = (DisplayName = "Max time to think about next move in seconds"))
+	float m_maxAiThinkTimeForNextMove;
+
+	UPROPERTY(EditInstanceOnly, Category = "AI Settings", BlueprintReadWrite, meta = (DisplayName = "Max time to think about next opponent token in seconds"))
+	float m_maxAiThinkTimeForNextOpponentToken;
 	
 public:
 	void Tick(float DeltaSeconds) override;

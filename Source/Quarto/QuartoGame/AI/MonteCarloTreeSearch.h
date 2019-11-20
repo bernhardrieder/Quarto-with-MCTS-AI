@@ -18,14 +18,15 @@ namespace ai
 		class MonteCarloTreeSearch
 		{
 		public:
-			MonteCarloTreeSearch(brFloat maxMoveSearchTime);
+			MonteCarloTreeSearch(brFloat maxMoveSearchTimeInSeconds, brFloat maxOpponentTokenSearchTimeInSeconds);
 			~MonteCarloTreeSearch();
 
-			void FindNextMove(QuartoBoardData const& currentBoard, PlayerId playerId, PlayerId opponentId) const;
+			void FindNextMove(QuartoTokenData token, QuartoBoardData const& currentBoard, PlayerId playerId, PlayerId opponentId) const;
 			brBool IsLookingForNextMove() const;
 			brBool HasFoundNextMove() const;
-			std::tuple<QuartoTokenData, QuartoBoardSlotCoordinates> GetNextMove() const;
-
+			QuartoBoardSlotCoordinates GetNextMoveCoordinates() const;
+			QuartoTokenData GetNextOpponentToken() const;
+			
 		protected:
 			internal::MCTSThread* m_threadWorker = nullptr;
 		};
@@ -60,16 +61,21 @@ namespace ai
 			class MCTSThread : public FRunnable
 			{
 			public:
-				MCTSThread(brFloat maxMoveSearchTime);
+				MCTSThread(brFloat maxMoveSearchTimeInSeconds, brFloat maxOpponentTokenSearchTimeInSeconds);
 				~MCTSThread();
 				
 				uint32 Run() override;
 				void Stop() override;
 				brBool IsProcessingRequest() const;
 
-				void RequestNextMove(QuartoBoardData const& currentBoard, PlayerId playerId, PlayerId opponentId);
-				brBool IsRequestFinished() const { return m_request.IsFinished; }
-				std::tuple<QuartoTokenData, QuartoBoardSlotCoordinates> ConsumeRequestResult();
+				void RequestNextMoveAndOpponentToken(QuartoTokenData token, QuartoBoardData const& currentBoard, PlayerId playerId, PlayerId opponentId);
+
+				void SearchNextMove();
+				void SearchNextOpponentToken();
+				
+				brBool IsRequestFinished() const { return m_request.IsMoveFound && m_request.IsTokenFound; }
+				QuartoTokenData ConsumeRequestResultToken();
+				QuartoBoardSlotCoordinates ConsumeRequestResultMove();
 
 			protected:
 				void PauseThread();
@@ -94,15 +100,19 @@ namespace ai
 				FThreadSafeBool m_kill;
 				FThreadSafeBool m_pause;
 
-				brFloat m_maxSearchTimeInSeconds;
+				brFloat m_maxMoveSearchTimeInSeconds;
+				brFloat m_maxOpponentTokenSearchTimeInSeconds;
 
 				struct
 				{
-					std::tuple<QuartoTokenData, QuartoBoardSlotCoordinates> Result;
+					QuartoTokenData ResultOpponentToken;
+					QuartoBoardSlotCoordinates ResultMove;
 					QuartoBoardData BoardData;
 					::PlayerId PlayerId;
 					::PlayerId OpponentId;
-					FThreadSafeBool IsFinished;
+					FThreadSafeBool IsMoveFound;
+					FThreadSafeBool IsTokenFound;
+					QuartoTokenData TokenData;
 				} m_request;
 			};
 		}

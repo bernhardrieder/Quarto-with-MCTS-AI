@@ -4,9 +4,9 @@
 
 using namespace ai::mcts;
 
-MonteCarloTreeSearch::MonteCarloTreeSearch(brFloat maxMoveSearchTime)
+MonteCarloTreeSearch::MonteCarloTreeSearch(brFloat maxMoveSearchTimeInSeconds, brFloat maxOpponentTokenSearchTimeInSeconds)
 {
-	m_threadWorker = new internal::MCTSThread(maxMoveSearchTime);
+	m_threadWorker = new internal::MCTSThread(maxMoveSearchTimeInSeconds, maxOpponentTokenSearchTimeInSeconds);
 }
 
 MonteCarloTreeSearch::~MonteCarloTreeSearch()
@@ -14,9 +14,9 @@ MonteCarloTreeSearch::~MonteCarloTreeSearch()
 	delete m_threadWorker;
 }
 
-void MonteCarloTreeSearch::FindNextMove(QuartoBoardData const& currentBoard, PlayerId playerId, PlayerId opponentId) const
+void MonteCarloTreeSearch::FindNextMove(QuartoTokenData token, QuartoBoardData const& currentBoard, PlayerId playerId, PlayerId opponentId) const
 {
-	m_threadWorker->RequestNextMove(currentBoard, playerId, opponentId);
+	m_threadWorker->RequestNextMoveAndOpponentToken(token, currentBoard, playerId, opponentId);
 }
 
 brBool MonteCarloTreeSearch::IsLookingForNextMove() const
@@ -29,9 +29,14 @@ brBool MonteCarloTreeSearch::HasFoundNextMove() const
 	return m_threadWorker->IsRequestFinished();
 }
 
-std::tuple<QuartoTokenData, QuartoBoardSlotCoordinates> MonteCarloTreeSearch::GetNextMove() const
+QuartoBoardSlotCoordinates MonteCarloTreeSearch::GetNextMoveCoordinates() const
 {
-	return m_threadWorker->ConsumeRequestResult();
+	return m_threadWorker->ConsumeRequestResultMove();
+}
+
+QuartoTokenData MonteCarloTreeSearch::GetNextOpponentToken() const
+{
+	return m_threadWorker->ConsumeRequestResultToken();
 }
 
 
@@ -103,12 +108,13 @@ internal::Node& internal::Node::GetRandomChild()
 	return Children[FMath::RandRange(0, Children.Num() - 1)];
 }
 
-internal::MCTSThread::MCTSThread(brFloat maxMoveSearchTime)
+internal::MCTSThread::MCTSThread(brFloat maxMoveSearchTimeInSeconds, brFloat maxOpponentTokenSearchTimeInSeconds)
 	: m_thread(FRunnableThread::Create(this, TEXT("MCTSThread"), 0, TPri_BelowNormal))
 	, m_semaphore(FGenericPlatformProcess::GetSynchEventFromPool(false))
 	, m_kill(false)
 	, m_pause(true)
-	, m_maxSearchTimeInSeconds(maxMoveSearchTime)
+	, m_maxMoveSearchTimeInSeconds(maxMoveSearchTimeInSeconds)
+	, m_maxOpponentTokenSearchTimeInSeconds(maxOpponentTokenSearchTimeInSeconds)
 {
 }
 
@@ -159,7 +165,7 @@ uint32 internal::MCTSThread::Run()
 			root.State.PlayerId = m_request.OpponentId;
 
 			FDateTime const startTime = FDateTime::Now();
-			while(!m_kill && (FDateTime::Now() - startTime).GetTotalSeconds() < m_maxSearchTimeInSeconds)
+			while(!m_kill && (FDateTime::Now() - startTime).GetTotalSeconds() < m_maxMoveSearchTimeInSeconds)
 			{
 				Node* promisingNode = Select(&root);
 				if(promisingNode && promisingNode->State.BoardData.GetStatus() == QuartoBoardData::GameStatus::InProgress)
@@ -195,10 +201,11 @@ uint32 internal::MCTSThread::Run()
 
 			m_mutex.Lock();
 			{
-				m_request.Result = std::make_tuple(oldFreeTokens[0], oldEmptySlotCoordinates[0]);
+				//m_request.Result = std::make_tuple(oldFreeTokens[0], oldEmptySlotCoordinates[0]);
 			}
 			m_mutex.Unlock();
-			m_request.IsFinished = true;
+			m_request.IsMoveFound = true;
+			m_request.IsTokenFound = true;
 
 			PauseThread();
 		}
@@ -224,7 +231,7 @@ brBool internal::MCTSThread::IsProcessingRequest() const
 	return static_cast<brBool>(!m_pause);
 }
 
-void internal::MCTSThread::RequestNextMove(QuartoBoardData const& currentBoard, PlayerId playerId, PlayerId opponentId)
+void internal::MCTSThread::RequestNextMoveAndOpponentToken(QuartoTokenData token, QuartoBoardData const& currentBoard, PlayerId playerId, PlayerId opponentId)
 {
 	if(IsProcessingRequest())
 	{
@@ -235,20 +242,52 @@ void internal::MCTSThread::RequestNextMove(QuartoBoardData const& currentBoard, 
 	m_request.BoardData = currentBoard;
 	m_request.PlayerId = playerId;
 	m_request.OpponentId = opponentId;
-	m_request.IsFinished = false;
+	m_request.IsMoveFound = false;
+	m_request.IsTokenFound = false;
+	m_request.TokenData = token;
 	ContinueThread();
 }
 
-std::tuple<QuartoTokenData, QuartoBoardSlotCoordinates> internal::MCTSThread::ConsumeRequestResult()
+void internal::MCTSThread::SearchNextMove()
 {
-	std::tuple<QuartoTokenData, QuartoBoardSlotCoordinates> nextMove;
+	m_request.IsMoveFound = false;
+
+	//do whatever needs to be done
+	
+	m_request.IsMoveFound = true;
+}
+
+void internal::MCTSThread::SearchNextOpponentToken()
+{
+	m_request.IsTokenFound = false;
+
+	//do whatever needs to be done
+	
+	m_request.IsTokenFound = true;
+}
+
+QuartoTokenData internal::MCTSThread::ConsumeRequestResultToken()
+{
+	QuartoTokenData result;
 	m_mutex.Lock();
 	{
-		nextMove = m_request.Result;
+		result = m_request.ResultOpponentToken;
 	}
 	m_mutex.Unlock();
-	m_request.IsFinished = false;
-	return nextMove;
+	m_request.IsTokenFound = false;
+	return result;
+}
+
+QuartoBoardSlotCoordinates internal::MCTSThread::ConsumeRequestResultMove()
+{
+	QuartoBoardSlotCoordinates result;
+	m_mutex.Lock();
+	{
+		result = m_request.ResultMove;
+	}
+	m_mutex.Unlock();
+	m_request.IsMoveFound = false;
+	return result;
 }
 
 void internal::MCTSThread::PauseThread()
