@@ -155,17 +155,23 @@ void AQuartoGame::HandleTokenSelection_NPC()
 {
 	if (m_gameBoard)
 	{
-		//there is no need to check if MCTS has actually finished the request since the gameflow ensures that a request was made before
-		auto const findToken = [&](QuartoTokenData const& data) { return m_gameTokens.FindByPredicate([&data](AQuartoToken* t) { return t && t->GetData() == data; }); };
-		AQuartoToken** token = findToken(m_mctsAi->GetNextOpponentToken());
-		if(!*token)
+		if (!m_mctsAi->IsLookingForNextOpponentToken() && !m_mctsAi->HasFoundNextOpponentToken())
 		{
-			//fallback
-			auto const& freeTokens = m_gameBoard->GetData().GetFreeTokens();
-			token = findToken(freeTokens[FMath::RandRange(0, freeTokens.Num() - 1)]);
+			m_mctsAi->FindNextOpponentToken(
+				m_gameBoard->GetData(),
+				static_cast<brU32>(GetNextPlayer(m_currentPlayer)),
+				static_cast<brU32>(m_currentPlayer)
+			);
+		}
+
+		if (m_mctsAi->IsLookingForNextOpponentToken() && !m_mctsAi->HasFoundNextOpponentToken())
+		{
+			// do random stuff
+			return;
 		}
 		
-		PickUpToken(*token);
+		auto const findToken = [&](QuartoTokenData const& data) { return m_gameTokens.FindByPredicate([&data](AQuartoToken* t) { return t && t->GetData() == data; }); };
+		PickUpToken(*findToken(m_mctsAi->GetNextOpponentToken()));
 	}
 	m_gameState = EQuartoGameState::DrawEnd;
 }
@@ -182,7 +188,6 @@ void AQuartoGame::HandleSlotSelection_Human()
 
 void AQuartoGame::HandleSlotSelection_NPC()
 {
-	//todo: fix this for the correct gameflow! npc can't choose from a token
 	if(m_gameBoard && m_pickedUpToken)
 	{
 		if(!m_mctsAi->IsLookingForNextMove() && !m_mctsAi->HasFoundNextMove())

@@ -14,43 +14,70 @@ MonteCarloTreeSearch::~MonteCarloTreeSearch()
 	delete m_threadWorker;
 }
 
-void MonteCarloTreeSearch::FindNextMove(QuartoTokenData token, QuartoBoardData const& currentBoard, PlayerId playerId, PlayerId opponentId) const
+void MonteCarloTreeSearch::FindNextOpponentToken(QuartoBoardData const& currentBoard, PlayerId playerId, PlayerId opponentId) const
 {
-	m_threadWorker->RequestNextMoveAndOpponentToken(token, currentBoard, playerId, opponentId);
+	m_threadWorker->RequestNextOpponentToken(currentBoard, playerId, opponentId);
+}
+
+void MonteCarloTreeSearch::FindNextMove(QuartoTokenData const& token, QuartoBoardData const& currentBoard, PlayerId playerId, PlayerId opponentId) const
+{
+	m_threadWorker->RequestNextMove(token, currentBoard, playerId, opponentId);
 }
 
 brBool MonteCarloTreeSearch::IsLookingForNextMove() const
 {
-	return m_threadWorker->IsProcessingRequest();
+	return m_threadWorker->IsProcessingAnyRequest();
+}
+
+brBool MonteCarloTreeSearch::IsLookingForNextOpponentToken() const
+{
+	return m_threadWorker->IsProcessingAnyRequest();
 }
 
 brBool MonteCarloTreeSearch::HasFoundNextMove() const
 {
-	return m_threadWorker->IsRequestFinished();
+	return m_threadWorker->IsMoveRequestFinished();
+}
+
+brBool MonteCarloTreeSearch::HasFoundNextOpponentToken() const
+{
+	return m_threadWorker->IsOpponentTokenRequestFinished();
 }
 
 QuartoBoardSlotCoordinates MonteCarloTreeSearch::GetNextMoveCoordinates() const
 {
-	return m_threadWorker->ConsumeRequestResultMove();
+	return m_threadWorker->ConsumeRequestResultNextMove();
 }
 
 QuartoTokenData MonteCarloTreeSearch::GetNextOpponentToken() const
 {
-	return m_threadWorker->ConsumeRequestResultToken();
+	return m_threadWorker->ConsumeRequestResultOpponentToken();
 }
 
 
-TArray<internal::State> internal::State::GetAllPossibleStates() const
+TArray<internal::State> internal::State::GetAllPossibleStates(QuartoTokenData const* token) const
 {
 	TArray<State> states;
+	auto addState = [&](QuartoBoardSlotCoordinates const& c, QuartoTokenData const& t)
+	{
+		State newState;
+		newState.BoardData = BoardData;
+		newState.BoardData.SetTokenOnBoard(c, t);
+		states.Add(newState);
+	};
+	
 	for(auto const& slotCoordinates : BoardData.GetEmptySlotCoordinates())
 	{
-		for(auto token : BoardData.GetFreeTokens())
+		if(!token)
 		{
-			State newState;
-			newState.BoardData = BoardData;
-			newState.BoardData.SetTokenOnBoard(slotCoordinates, token);
-			states.Add(newState);
+			for (auto const& freeToken : BoardData.GetFreeTokens())
+			{
+				addState(slotCoordinates, freeToken);
+			}
+		}
+		else
+		{
+			addState(slotCoordinates, *token);
 		}
 	}
 	return states;
@@ -116,6 +143,8 @@ internal::MCTSThread::MCTSThread(brFloat maxMoveSearchTimeInSeconds, brFloat max
 	, m_maxMoveSearchTimeInSeconds(maxMoveSearchTimeInSeconds)
 	, m_maxOpponentTokenSearchTimeInSeconds(maxOpponentTokenSearchTimeInSeconds)
 {
+	m_moveRequest.IsProcessed = true;
+	m_opponentTokenRequest.IsProcessed = true;
 }
 
 internal::MCTSThread::~MCTSThread()
@@ -160,52 +189,15 @@ uint32 internal::MCTSThread::Run()
 		}
 		else
 		{
-			Node root;
-			root.State.BoardData = m_request.BoardData;
-			root.State.PlayerId = m_request.OpponentId;
-
-			FDateTime const startTime = FDateTime::Now();
-			while(!m_kill && (FDateTime::Now() - startTime).GetTotalSeconds() < m_maxMoveSearchTimeInSeconds)
+			if(!m_opponentTokenRequest.IsProcessed)
 			{
-				Node* promisingNode = Select(&root);
-				if(promisingNode && promisingNode->State.BoardData.GetStatus() == QuartoBoardData::GameStatus::InProgress)
-				{
-					Expand(promisingNode, m_request.PlayerId, m_request.OpponentId);
-				}
-				Node* nodeToExplore = promisingNode;
-				if(promisingNode && promisingNode->Children.Num() > 0)
-				{
-					nodeToExplore = &promisingNode->GetRandomChild();
-				}
-				PlayerId const winnerId = Simulate(nodeToExplore, m_request.PlayerId, m_request.OpponentId);
-				BackPropagate(nodeToExplore, winnerId);
+				SearchNextOpponentToken();
 			}
-
-			auto oldEmptySlotCoordinates = m_request.BoardData.GetEmptySlotCoordinates();
-			auto oldFreeTokens = m_request.BoardData.GetFreeTokens();
 			
-			auto& winnerBoard = root.GetChildWithHighestScore().State.BoardData;
-			for(auto& slotCoordinates : winnerBoard.GetEmptySlotCoordinates())
+			if(!m_moveRequest.IsProcessed)
 			{
-				oldEmptySlotCoordinates.Remove(slotCoordinates);
+				SearchNextMove();
 			}
-			for(auto& token : winnerBoard.GetFreeTokens())
-			{
-				oldFreeTokens.Remove(token);
-			}
-
-			if(oldFreeTokens.Num() < 1 || oldEmptySlotCoordinates.Num() < 1)
-			{
-				UE_LOG(LogTemp, Error, TEXT("ERROR: There are no found tokens or slotcoordinates found for the Monte Carlo Tree Search move search!!"));
-			}
-
-			m_mutex.Lock();
-			{
-				//m_request.Result = std::make_tuple(oldFreeTokens[0], oldEmptySlotCoordinates[0]);
-			}
-			m_mutex.Unlock();
-			m_request.IsMoveFound = true;
-			m_request.IsTokenFound = true;
 
 			PauseThread();
 		}
@@ -226,67 +218,139 @@ void internal::MCTSThread::Stop()
 	}
 }
 
-brBool internal::MCTSThread::IsProcessingRequest() const
+brBool internal::MCTSThread::IsProcessingAnyRequest() const
 {
 	return static_cast<brBool>(!m_pause);
 }
 
-void internal::MCTSThread::RequestNextMoveAndOpponentToken(QuartoTokenData token, QuartoBoardData const& currentBoard, PlayerId playerId, PlayerId opponentId)
+void internal::MCTSThread::RequestNextMove(QuartoTokenData const& token, QuartoBoardData const& currentBoard, PlayerId playerId, PlayerId opponentId)
 {
-	if(IsProcessingRequest())
+	if(IsProcessingAnyRequest())
 	{
-		//thread is already looking for a next move
 		return;
 	}
 	
-	m_request.BoardData = currentBoard;
-	m_request.PlayerId = playerId;
-	m_request.OpponentId = opponentId;
-	m_request.IsMoveFound = false;
-	m_request.IsTokenFound = false;
-	m_request.TokenData = token;
+	m_moveRequest.BoardData = currentBoard;
+	m_moveRequest.TokenData = token;
+	m_moveRequest.PlayerId = playerId;
+	m_moveRequest.OpponentId = opponentId;
+	m_moveRequest.IsMoveFound = false;
+	m_moveRequest.IsProcessed = false;
+	ContinueThread();
+}
+
+void internal::MCTSThread::RequestNextOpponentToken(QuartoBoardData const& currentBoard, PlayerId playerId, PlayerId opponentId)
+{
+	if (IsProcessingAnyRequest())
+	{
+		return;
+	}
+
+	m_opponentTokenRequest.BoardData = currentBoard;
+	m_opponentTokenRequest.PlayerId = playerId;
+	m_opponentTokenRequest.OpponentId = opponentId;
+	m_opponentTokenRequest.IsTokenFound = false;
+	m_opponentTokenRequest.IsProcessed = false;
 	ContinueThread();
 }
 
 void internal::MCTSThread::SearchNextMove()
 {
-	m_request.IsMoveFound = false;
+	m_moveRequest.IsMoveFound = false;
 
-	//do whatever needs to be done
+	auto const winnerBoard = 
+		SearchNextDraw(
+			m_maxMoveSearchTimeInSeconds, 
+			&m_moveRequest.BoardData, 
+			&m_moveRequest.TokenData, 
+			m_moveRequest.PlayerId, 
+			m_moveRequest.OpponentId, 
+			false);
 	
-	m_request.IsMoveFound = true;
+	auto oldEmptySlotCoordinates = m_moveRequest.BoardData.GetEmptySlotCoordinates();
+	for (auto& slotCoordinates : winnerBoard.GetEmptySlotCoordinates())
+	{
+		oldEmptySlotCoordinates.Remove(slotCoordinates);
+	}
+
+	m_mutex.Lock();
+	{
+		if (oldEmptySlotCoordinates.Num() == 1)
+		{
+			m_moveRequest.ResultMove = oldEmptySlotCoordinates[0];
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("ERROR: No slotcoordinates were found with the Monte Carlo Tree Search! Random free slot coordinate will be used."));
+			auto const& freeCoords = m_opponentTokenRequest.BoardData.GetEmptySlotCoordinates();
+			m_moveRequest.ResultMove = freeCoords[FMath::RandRange(0, freeCoords.Num() - 1)];
+		}
+	}
+	m_mutex.Unlock();
+	
+	m_moveRequest.IsMoveFound = true;
+	m_moveRequest.IsProcessed = true;
 }
 
 void internal::MCTSThread::SearchNextOpponentToken()
 {
-	m_request.IsTokenFound = false;
+	m_opponentTokenRequest.IsTokenFound = false;
 
-	//do whatever needs to be done
+	auto const winnerBoard = 
+		SearchNextDraw(
+			m_maxOpponentTokenSearchTimeInSeconds, 
+			&m_opponentTokenRequest.BoardData, 
+			nullptr,
+			m_opponentTokenRequest.PlayerId,
+			m_opponentTokenRequest.OpponentId,
+			true);
 	
-	m_request.IsTokenFound = true;
+	auto oldFreeTokens = m_opponentTokenRequest.BoardData.GetFreeTokens();
+	for (auto& token : winnerBoard.GetFreeTokens())
+	{
+		oldFreeTokens.Remove(token);
+	}
+
+	m_mutex.Lock();
+	{
+		if (oldFreeTokens.Num() == 1)
+		{
+			m_opponentTokenRequest.ResultToken = oldFreeTokens[0];
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("ERROR: No token was found with the Monte Carlo Tree Search! Random free token will be used."));
+			auto const& freeTokens = m_opponentTokenRequest.BoardData.GetFreeTokens();
+			m_opponentTokenRequest.ResultToken = freeTokens[FMath::RandRange(0, freeTokens.Num() - 1)];
+		}
+	}
+	m_mutex.Unlock();
+
+	m_opponentTokenRequest.IsTokenFound = true;
+	m_opponentTokenRequest.IsProcessed = true;
 }
 
-QuartoTokenData internal::MCTSThread::ConsumeRequestResultToken()
+QuartoTokenData internal::MCTSThread::ConsumeRequestResultOpponentToken()
 {
 	QuartoTokenData result;
 	m_mutex.Lock();
 	{
-		result = m_request.ResultOpponentToken;
+		result = m_opponentTokenRequest.ResultToken;
 	}
 	m_mutex.Unlock();
-	m_request.IsTokenFound = false;
+	m_opponentTokenRequest.IsTokenFound = false;
 	return result;
 }
 
-QuartoBoardSlotCoordinates internal::MCTSThread::ConsumeRequestResultMove()
+QuartoBoardSlotCoordinates internal::MCTSThread::ConsumeRequestResultNextMove()
 {
 	QuartoBoardSlotCoordinates result;
 	m_mutex.Lock();
 	{
-		result = m_request.ResultMove;
+		result = m_moveRequest.ResultMove;
 	}
 	m_mutex.Unlock();
-	m_request.IsMoveFound = false;
+	m_moveRequest.IsMoveFound = false;
 	return result;
 }
 
@@ -306,6 +370,32 @@ void internal::MCTSThread::ContinueThread()
 	}
 }
 
+QuartoBoardData internal::MCTSThread::SearchNextDraw(brFloat maxSearchTime, QuartoBoardData const* boardData, QuartoTokenData const* tokenData, PlayerId playerId, PlayerId opponentId, brBool negate) const
+{
+	Node root;
+	root.State.BoardData = *boardData;
+	root.State.PlayerId = opponentId;
+
+	FDateTime const startTime = FDateTime::Now();
+	while (!m_kill && (FDateTime::Now() - startTime).GetTotalSeconds() < maxSearchTime)
+	{
+		Node* promisingNode = Select(&root);
+		if (promisingNode && promisingNode->State.BoardData.GetStatus() == QuartoBoardData::GameStatus::InProgress)
+		{
+			Expand(promisingNode, playerId, opponentId, tokenData);
+		}
+		Node* nodeToExplore = promisingNode;
+		if (promisingNode && promisingNode->Children.Num() > 0)
+		{
+			nodeToExplore = &promisingNode->GetRandomChild();
+		}
+		PlayerId const winnerId = Simulate(nodeToExplore, playerId, opponentId, negate);
+		BackPropagate(nodeToExplore, winnerId, negate);
+	}
+	
+	return root.GetChildWithHighestScore().State.BoardData;
+}
+
 internal::Node* internal::MCTSThread::Select(Node* node)
 {
 	Node* result = node;
@@ -316,14 +406,14 @@ internal::Node* internal::MCTSThread::Select(Node* node)
 	return result;
 }
 
-void internal::MCTSThread::Expand(Node* node, PlayerId playerId, PlayerId opponentId)
+void internal::MCTSThread::Expand(Node* node, PlayerId playerId, PlayerId opponentId, QuartoTokenData const* token)
 {
 	if(!node)
 	{
 		return;
 	}
-	
-	TArray<State> possibleStates = node->State.GetAllPossibleStates();
+
+	TArray<State> possibleStates = node->State.GetAllPossibleStates(token);
 	for(State& state : possibleStates)
 	{
 		Node child;
@@ -335,7 +425,7 @@ void internal::MCTSThread::Expand(Node* node, PlayerId playerId, PlayerId oppone
 	}
 }
 
-PlayerId internal::MCTSThread::Simulate(Node* node, PlayerId playerId, PlayerId opponentId)
+PlayerId internal::MCTSThread::Simulate(Node* node, PlayerId playerId, PlayerId opponentId, brBool negate)
 {
 	if (!node)
 	{
@@ -348,7 +438,7 @@ PlayerId internal::MCTSThread::Simulate(Node* node, PlayerId playerId, PlayerId 
 	{
 		if(node->Parent)
 		{
-			node->Parent->State.WinScore = INT_MIN;
+			node->Parent->State.WinScore = negate ? INT_MAX : INT_MIN;
 		}
 		return node->State.PlayerId;
 	}
@@ -364,14 +454,15 @@ PlayerId internal::MCTSThread::Simulate(Node* node, PlayerId playerId, PlayerId 
 	return tmpState.PlayerId;
 }
 
-void internal::MCTSThread::BackPropagate(Node* node, PlayerId playerId)
+void internal::MCTSThread::BackPropagate(Node* node, PlayerId playerId, brBool negate)
 {
 	Node* tmpNode = node;
 	while(tmpNode)
 	{
 		State& state = tmpNode->State;
 		++(state.VisitCount);
-		if(state.PlayerId == playerId)
+		if((!negate && state.PlayerId == playerId) 
+			|| (negate && state.PlayerId != playerId))
 		{
 			state.WinScore += 10;
 		}
@@ -398,13 +489,13 @@ internal::Node* internal::MCTSThread::FindBestNodeWithUct(Node* node)
 		return (nodeWinScore / nodeVisit) + explorationParam * FMath::Sqrt(FMath::Loge(totalVisit) / static_cast<brFloat>(nodeVisit));
 	};
 
-	Node* bestNode = node;
+	Node* bestNode = nullptr;
 	brU32 const parentVisit = node->State.VisitCount;
-	brFloat highestUctValue = 0.f;
+	brFloat highestUctValue = brFloatMin;
 	for(Node& childNode : node->Children)
 	{
 		brFloat const uctValue = uctValueFct(parentVisit, childNode.State.WinScore, childNode.State.VisitCount);
-		if(uctValue > highestUctValue)
+		if(uctValue > highestUctValue || !bestNode)
 		{
 			bestNode = &childNode;
 			highestUctValue = uctValue;

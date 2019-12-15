@@ -20,3 +20,4 @@ using brS8 = int8;
 using PlayerId = brU32;
 
 #define brFloatMax FLT_MAX
+#define brFloatMin FLT_MIN
