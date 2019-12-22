@@ -14,15 +14,17 @@
 AQuartoGame::AQuartoGame(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 	, m_gameBoard(nullptr)
-	, m_player1(EQuartoPlayer::Human)
-	, m_player2(EQuartoPlayer::Human)
+	, m_player1(EQuartoPlayerType::Human)
+	, m_player2(EQuartoPlayerType::Human)
 	, m_maxAiThinkTimeForNextMove(5.0f)
 	, m_maxAiThinkTimeForNextOpponentToken(0.5f)
 	, m_gameState(EQuartoGameState::GameStart)
+#ifdef DEBUG_BUILD
 	, m_oldGameState(EQuartoGameState::GameEnd)
+#endif
 	, m_pickedUpToken(nullptr)
 	, m_focusedToken(nullptr)
-	, m_currentPlayer(EPlayer::Player_1)
+	, m_currentPlayer(EQuartoPlayer::Count)
 	, m_mctsAi(nullptr)
 {
 	AutoPossessPlayer = EAutoReceiveInput::Player0;
@@ -59,11 +61,13 @@ void AQuartoGame::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
+#ifdef DEBUG_BUILD
 	if(m_oldGameState != m_gameState)
 	{
 		UE_LOG(LogTemp, Display, TEXT("GameLoop: %s - %s"), *GETENUMSTRING("EQuartoGameState", m_gameState), *GetPlayerName(m_currentPlayer));
 		m_oldGameState = m_gameState;
 	}
+#endif
 	
 	switch(m_gameState)
 	{
@@ -100,7 +104,6 @@ void AQuartoGame::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
 	PlayerInputComponent->BindAction("QuartoGame_PlayerSelect", EInputEvent::IE_Pressed, this, &AQuartoGame::HandlePlayerSelectInput);
-	//PlayerInputComponent->BindAction("QuartoGame_PlayerAbort", EInputEvent::IE_Pressed, this, &AQuartoGame::DiscardPickedUpToken);
 }
 
 void AQuartoGame::HandleGameStart()
@@ -115,23 +118,23 @@ void AQuartoGame::HandleGameStart()
 		}
 	}
 
-	m_players[0] = m_player1 == EQuartoPlayer::Human ? EPlayer::Player_1 : EPlayer::NPC_1;
-	m_players[1] = m_player2 == EQuartoPlayer::Human ? EPlayer::Player_2 : EPlayer::NPC_2;
-	m_currentPlayer = m_players[static_cast<int>(FMath::RandBool())];
+	m_players[0] = m_player1 == EQuartoPlayerType::Human ? EQuartoPlayer::Player_1 : EQuartoPlayer::NPC_1;
+	m_players[1] = m_player2 == EQuartoPlayerType::Human ? EQuartoPlayer::Player_2 : EQuartoPlayer::NPC_2;
+	SetCurrentPlayer(m_players[static_cast<int>(FMath::RandBool())]);
 
-	m_gameState = IsPlayerNpc(m_currentPlayer) ? EQuartoGameState::TokenSelection_NPC : EQuartoGameState::TokenSelection_Human;
+	SetGameState(IsPlayerNpc(m_currentPlayer) ? EQuartoGameState::TokenSelection_NPC : EQuartoGameState::TokenSelection_Human);
 }
 
 void AQuartoGame::HandleDrawEnd()
 {
-	m_currentPlayer = GetNextPlayer(m_currentPlayer);
-	m_gameState = IsPlayerNpc(m_currentPlayer) ? EQuartoGameState::SlotSelection_NPC : EQuartoGameState::SlotSelection_Human;
+	SetCurrentPlayer(GetNextPlayer(m_currentPlayer));
+	SetGameState(IsPlayerNpc(m_currentPlayer) ? EQuartoGameState::SlotSelection_NPC : EQuartoGameState::SlotSelection_Human);
 }
 
 void AQuartoGame::HandleGameEnd()
 {
 	//broadcast event
-	m_gameState = EQuartoGameState::GameStart;
+	SetGameState(EQuartoGameState::GameStart);
 }
 
 void AQuartoGame::HandleTokenSelection_Human()
@@ -173,7 +176,7 @@ void AQuartoGame::HandleTokenSelection_NPC()
 		auto const findToken = [&](QuartoTokenData const& data) { return m_gameTokens.FindByPredicate([&data](AQuartoToken* t) { return t && t->GetData() == data; }); };
 		PickUpToken(*findToken(m_mctsAi->GetNextOpponentToken()));
 	}
-	m_gameState = EQuartoGameState::DrawEnd;
+	SetGameState(EQuartoGameState::DrawEnd);
 }
 
 void AQuartoGame::HandleSlotSelection_Human()
@@ -213,7 +216,7 @@ void AQuartoGame::HandleSlotSelection_NPC()
 		m_gameBoard->PlaceTokenOnBoardSlot(m_pickedUpToken, moveCoordinates);
 	}
 	
-	m_gameState = EQuartoGameState::GameBoardValidation;
+	SetGameState(EQuartoGameState::GameBoardValidation);
 }
 
 void AQuartoGame::HandleGameBoardValidation()
@@ -229,14 +232,13 @@ void AQuartoGame::HandleGameBoardValidation()
 
 	if (isGameWon || !canContinuePlaying)
 	{
-		m_gameState = EQuartoGameState::GameEnd;
+		SetGameState(EQuartoGameState::GameEnd);
 		UE_LOG(LogTemp, Display, TEXT("%s won!"), *GetPlayerName(m_currentPlayer));
 	}
 	else
 	{
-		m_gameState = IsPlayerNpc(m_currentPlayer) ? EQuartoGameState::TokenSelection_NPC : EQuartoGameState::TokenSelection_Human;
+		SetGameState(IsPlayerNpc(m_currentPlayer) ? EQuartoGameState::TokenSelection_NPC : EQuartoGameState::TokenSelection_Human);
 	}
-
 }
 
 void AQuartoGame::HandlePlayerSelectInput()
@@ -262,7 +264,7 @@ void AQuartoGame::PickUpFocusedToken()
 	{
 		m_focusedToken->ShowHighlightForPlayer(false);
 		PickUpToken(m_focusedToken);
-		m_gameState = EQuartoGameState::DrawEnd;
+		SetGameState(EQuartoGameState::DrawEnd);
 	}
 }
 
@@ -276,16 +278,6 @@ void AQuartoGame::PickUpToken(AQuartoToken* token)
 	}
 }
 
-//void AQuartoGame::DiscardPickedUpToken()
-//{
-//	if(m_pickedUpToken)
-//	{
-//		m_pickedUpToken->Reset();
-//		m_pickedUpToken = nullptr;
-//		m_gameState = EQuartoGameState::TokenSelection_Human;
-//	}
-//}
-
 void AQuartoGame::PlaceTokenOnFocusedSlot()
 {
 	if (m_pickedUpToken && m_gameBoard
@@ -294,7 +286,25 @@ void AQuartoGame::PlaceTokenOnFocusedSlot()
 		m_gameBoard->PlaceTokenOnLastFoundFreeSlot(m_pickedUpToken);
 		m_pickedUpToken = nullptr;
 
-		m_gameState = EQuartoGameState::GameBoardValidation;
+		SetGameState(EQuartoGameState::GameBoardValidation);
+	}
+}
+
+void AQuartoGame::SetCurrentPlayer(EQuartoPlayer player)
+{
+	if(m_currentPlayer != player)
+	{
+		OnCurrentPlayerChangedEvent.Broadcast(m_currentPlayer, player);
+		m_currentPlayer = player;
+	}
+}
+
+void AQuartoGame::SetGameState(EQuartoGameState gameState)
+{
+	if(m_gameState != gameState)
+	{
+		OnGameStateChangedEvent.Broadcast(m_gameState, gameState);
+		m_gameState = gameState;
 	}
 }
 
@@ -331,7 +341,7 @@ AQuartoToken* AQuartoGame::FindToken(const FHitResult& hitResult) const
 	return nullptr;
 }
 
-AQuartoGame::EPlayer AQuartoGame::GetNextPlayer(EPlayer currentPlayer)
+EQuartoPlayer AQuartoGame::GetNextPlayer(EQuartoPlayer currentPlayer)
 {
 	//in case I ever decide to make a custom Quarto with more than 2 players
 	auto const itBegin = std::begin(m_players);
@@ -350,15 +360,15 @@ AQuartoGame::EPlayer AQuartoGame::GetNextPlayer(EPlayer currentPlayer)
 	return currentPlayer;
 }
 
-FString AQuartoGame::GetPlayerName(EPlayer player)
+FString AQuartoGame::GetPlayerName(EQuartoPlayer player)
 {
 	switch(player)
 	{
-		case EPlayer::Player_1: return FString("Player_1");
-		case EPlayer::Player_2: return FString("Player_2");
-		case EPlayer::NPC_1: return FString("NPC_1");
-		case EPlayer::NPC_2: return FString("NPC_2");
-		case EPlayer::Count: 
+		case EQuartoPlayer::Player_1: return FString("Player_1");
+		case EQuartoPlayer::Player_2: return FString("Player_2");
+		case EQuartoPlayer::NPC_1: return FString("NPC_1");
+		case EQuartoPlayer::NPC_2: return FString("NPC_2");
+		case EQuartoPlayer::Count: 
 		default:
 			return FString("Invalid");
 	}

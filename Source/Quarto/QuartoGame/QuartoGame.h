@@ -47,19 +47,23 @@ enum class EQuartoGameState : uint8
 	GameEnd
 };
 
+UENUM(BlueprintType)
+enum class EQuartoPlayer : uint8
+{
+	Player_1 = 0,
+	Player_2,
+	NPC_1,
+	NPC_2,
+	Count
+};
+
 UCLASS(config=Game)
 class AQuartoGame : public APawn
 {
 	GENERATED_UCLASS_BODY()
-
-	enum class EPlayer : uint8
-	{
-		Player_1 = 0,
-		Player_2,
-		NPC_1,
-		NPC_2,
-		Count
-	};
+	
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnGameStateChangedEvent, EQuartoGameState, oldState, EQuartoGameState, newState);
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnCurrentPlayerChangedEvent, EQuartoPlayer, oldPlayer, EQuartoPlayer, newPlayer);
 	
 protected:
 	UPROPERTY(EditInstanceOnly, Category = "Components", BlueprintReadOnly, meta = (DisplayName = "Game Board"))
@@ -69,17 +73,24 @@ protected:
 	TArray<AQuartoToken*> m_gameTokens;
 
 	UPROPERTY(EditInstanceOnly, Category = "Settings", BlueprintReadWrite, meta = (DisplayName = "Player 1"))
-	EQuartoPlayer m_player1;
+	EQuartoPlayerType m_player1;
 
 	UPROPERTY(EditInstanceOnly, Category = "Settings", BlueprintReadWrite, meta = (DisplayName = "Player 2"))
-	EQuartoPlayer m_player2;
+	EQuartoPlayerType m_player2;
 
 	UPROPERTY(EditInstanceOnly, Category = "AI Settings", BlueprintReadWrite, meta = (DisplayName = "Max time to think about next move in seconds"))
 	float m_maxAiThinkTimeForNextMove;
 
 	UPROPERTY(EditInstanceOnly, Category = "AI Settings", BlueprintReadWrite, meta = (DisplayName = "Max time to think about next opponent token in seconds"))
 	float m_maxAiThinkTimeForNextOpponentToken;
-	
+
+public:
+	UPROPERTY(BlueprintAssignable)
+	FOnGameStateChangedEvent OnGameStateChangedEvent;
+
+	UPROPERTY(BlueprintAssignable)
+	FOnCurrentPlayerChangedEvent OnCurrentPlayerChangedEvent;
+
 public:
 	void Tick(float DeltaSeconds) override;
 	void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
@@ -98,29 +109,32 @@ private:
 	void HandleSlotSelection_NPC();
 	void HandleGameBoardValidation();
 
-	/** Game Specifics */
-
 	/** Player Input */
 	void HandlePlayerSelectInput();
 	void PickUpFocusedToken();
 	void PickUpToken(AQuartoToken* token);
-	//void DiscardPickedUpToken();
 	void PlaceTokenOnFocusedSlot();
+
+	/** Setters */
+	void SetCurrentPlayer(EQuartoPlayer player);
+	void SetGameState(EQuartoGameState gameState);
 
 	/** Helper */
 	FHitResult FetchMouseCursorTargetHitResult() const;
 	AQuartoToken* FindToken(const FHitResult& hitResult) const;
-	EPlayer GetNextPlayer(EPlayer currentPlayer);
-	static constexpr brBool IsPlayerNpc(EPlayer player) { return player == EPlayer::NPC_1 || player == EPlayer::NPC_2; }
-	static FString GetPlayerName(EPlayer player);
+	EQuartoPlayer GetNextPlayer(EQuartoPlayer currentPlayer);
+	static constexpr brBool IsPlayerNpc(EQuartoPlayer player) { return player == EQuartoPlayer::NPC_1 || player == EQuartoPlayer::NPC_2; }
+	static FString GetPlayerName(EQuartoPlayer player);
 	
 private:
 	EQuartoGameState m_gameState;
-	EQuartoGameState m_oldGameState;
 	AQuartoToken* m_pickedUpToken;
 	AQuartoToken* m_focusedToken;
-	EPlayer m_players[QUARTO_NUM_OF_PLAYERS];
-	EPlayer m_currentPlayer;
+	EQuartoPlayer m_players[QUARTO_NUM_OF_PLAYERS];
+	EQuartoPlayer m_currentPlayer;
 	ai::mcts::MonteCarloTreeSearch* m_mctsAi;
-
+	
+#ifdef DEBUG_BUILD
+	EQuartoGameState m_oldGameState;
+#endif
 };

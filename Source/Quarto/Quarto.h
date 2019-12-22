@@ -11,3 +11,7 @@
 #ifdef IMGUI_ENABLED
 #include <imgui.h>
 #endif // IMGUI_ENABLED
+
+#if defined(UE_BUILD_DEBUG) || defined(UE_BUILD_DEVELOPMENT) || defined(UE_BUILD_TEST) || defined(UE_EDITOR)
+#define DEBUG_BUILD
+#endif

@@ -10,7 +10,7 @@
 #define GETENUMSTRING(etype, evalue) ( (FindObject<UEnum>(ANY_PACKAGE, TEXT(etype), true) != nullptr) ? FindObject<UEnum>(ANY_PACKAGE, TEXT(etype), true)->GetEnumName((int32)evalue) : FString("Invalid - are you sure enum uses UENUM() macro?") )
 
 UENUM(BlueprintType)
-enum class EQuartoPlayer : uint8 /*brU8 -> UE header tool doesn't like it*/
+enum class EQuartoPlayerType : uint8 /*brU8 -> UE header tool doesn't like it*/
 {
 	Human 	UMETA(DisplayName = "Human"),
 	NPC		UMETA(DisplayName = "NPC")
