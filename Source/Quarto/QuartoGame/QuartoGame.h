@@ -1,11 +1,4 @@
 // Copyright 1998-2019 Epic Games, Inc. All Rights Reserved.
-
-
-
-
-
-
-
 #pragma once
 
 #include "Common/UnrealCommon.h"
@@ -100,6 +93,7 @@ protected:
 	void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 private:
+	/** Game State Handlers*/
 	void HandleGameStart();
 	void HandleDrawEnd();
 	void HandleGameEnd();
