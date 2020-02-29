@@ -10,6 +10,7 @@
 #include "QuartoBoardSlotComponent.h"
 #include "QuartoToken.h"
 #include "AI/MonteCarloTreeSearch.h"
+#include "QuartoGameCameraComponent.h"
 
 AQuartoGame::AQuartoGame(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -27,7 +28,10 @@ AQuartoGame::AQuartoGame(const FObjectInitializer& ObjectInitializer)
 	, m_currentPlayer(EQuartoPlayer::Count)
 	, m_mctsAi(nullptr)
 {
-	AutoPossessPlayer = EAutoReceiveInput::Player0;
+	RootComponent = CreateDefaultSubobject<USceneComponent>(FName("Root"));
+
+	m_gameCamera = CreateDefaultSubobject<UQuartoGameCameraComponent>(FName("Game Camera"));
+	m_gameCamera->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
 }
 
 void AQuartoGame::BeginPlay()
@@ -51,6 +55,26 @@ void AQuartoGame::BeginPlay()
 	}
 }
 
+void AQuartoGame::StartPlaying(APlayerController* playerController)
+{
+	if(m_gameCamera && playerController)
+	{
+		playerController->Possess(this);
+		m_gameCamera->AttachToCamera(playerController);
+		m_isPlayed = true;
+	}
+}
+
+void AQuartoGame::StopPlaying(APlayerController* playerController)
+{
+	if (m_gameCamera && playerController)
+	{
+		playerController->UnPossess();
+		m_gameCamera->DetachFromCamera(playerController);
+		m_isPlayed = false;
+	}
+}
+
 void AQuartoGame::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	delete m_mctsAi;
@@ -60,6 +84,11 @@ void AQuartoGame::EndPlay(const EEndPlayReason::Type EndPlayReason)
 void AQuartoGame::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+
+	if(!m_isPlayed)
+	{
+		return;
+	}
 
 #ifdef DEBUG_BUILD
 	if(m_oldGameState != m_gameState)
@@ -104,6 +133,11 @@ void AQuartoGame::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
 	PlayerInputComponent->BindAction("QuartoGame_PlayerSelect", EInputEvent::IE_Pressed, this, &AQuartoGame::HandlePlayerSelectInput);
+	PlayerInputComponent->BindAction("QuartoGame_CameraMovementActivation", EInputEvent::IE_Pressed, this, &AQuartoGame::SetCameraMovementEnabled);
+	PlayerInputComponent->BindAction("QuartoGame_CameraMovementActivation", EInputEvent::IE_Released, this, &AQuartoGame::SetCameraMovementDisabled);
+	PlayerInputComponent->BindAxis("QuartoGame_CameraZoom", this, &AQuartoGame::HandleCameraZoomInput);
+	PlayerInputComponent->BindAxis("QuartoGame_CameraMovementX", this, &AQuartoGame::HandleCameraMovementInputAxisX);
+	PlayerInputComponent->BindAxis("QuartoGame_CameraMovementY", this, &AQuartoGame::HandleCameraMovementInputAxisY);
 }
 
 void AQuartoGame::HandleGameStart()
@@ -253,6 +287,49 @@ void AQuartoGame::HandlePlayerSelectInput()
 		break;
 	default:
 		break;
+	}
+}
+
+void AQuartoGame::SetCameraMovementEnabled()
+{
+	if(m_gameCamera)
+	{
+		m_gameCamera->SetCameraMovementEnabled(true);
+	}
+}
+
+void AQuartoGame::SetCameraMovementDisabled()
+{
+	if(m_gameCamera)
+	{
+		m_gameCamera->SetCameraMovementEnabled(false);
+	}
+}
+
+void AQuartoGame::HandleCameraMovementInputAxisX(brFloat input)
+{
+	UWorld* world = GetWorld();
+	if(m_gameCamera && world)
+	{
+		m_gameCamera->HandleCameraInput(0.f, input, 0.f, world->GetDeltaSeconds());
+	}
+}
+
+void AQuartoGame::HandleCameraMovementInputAxisY(brFloat input)
+{
+	UWorld* world = GetWorld();
+	if (m_gameCamera && world)
+	{
+		m_gameCamera->HandleCameraInput(input, 0.f, 0.f, world->GetDeltaSeconds());
+	}
+}
+
+void AQuartoGame::HandleCameraZoomInput(brFloat input)
+{
+	UWorld* world = GetWorld();
+	if (m_gameCamera && world)
+	{
+		m_gameCamera->HandleCameraInput(0.f, 0.f, input, world->GetDeltaSeconds());
 	}
 }
 

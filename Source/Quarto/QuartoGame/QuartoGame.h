@@ -7,9 +7,11 @@
 #include "QuartoGame.generated.h"
 
 struct QuartoBoardData;
+class APlayerController;
 class AQuartoBoard;
 class AQuartoToken;
 class UQuartoBoardSlotComponent;
+class UQuartoGameCameraComponent;
 
 namespace ai
 {
@@ -71,6 +73,9 @@ protected:
 	UPROPERTY(EditInstanceOnly, Category = "Settings", BlueprintReadWrite, meta = (DisplayName = "Player 2"))
 	EQuartoPlayerType m_player2;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	UQuartoGameCameraComponent* m_gameCamera;
+
 	UPROPERTY(EditInstanceOnly, Category = "AI Settings", BlueprintReadWrite, meta = (DisplayName = "Max time to think about next move in seconds"))
 	float m_maxAiThinkTimeForNextMove;
 
@@ -85,6 +90,12 @@ public:
 	FOnCurrentPlayerChangedEvent OnCurrentPlayerChangedEvent;
 
 public:
+	UFUNCTION(BlueprintCallable)
+	void StartPlaying(APlayerController* playerController);
+
+	UFUNCTION(BlueprintCallable)
+	void StopPlaying(APlayerController* playerController);
+
 	void Tick(float DeltaSeconds) override;
 	void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 
@@ -105,6 +116,11 @@ private:
 
 	/** Player Input */
 	void HandlePlayerSelectInput();
+	void SetCameraMovementEnabled();
+	void SetCameraMovementDisabled();
+	void HandleCameraMovementInputAxisX(brFloat input);
+	void HandleCameraMovementInputAxisY(brFloat input);
+	void HandleCameraZoomInput(brFloat);
 	void PickUpFocusedToken();
 	void PickUpToken(AQuartoToken* token);
 	void PlaceTokenOnFocusedSlot();
@@ -127,6 +143,8 @@ private:
 	EQuartoPlayer m_players[QUARTO_NUM_OF_PLAYERS];
 	EQuartoPlayer m_currentPlayer;
 	ai::mcts::MonteCarloTreeSearch* m_mctsAi;
+
+	brBool m_isPlayed = false;
 	
 #ifdef DEBUG_BUILD
 	EQuartoGameState m_oldGameState;
