@@ -1,11 +1,9 @@
-// F
+#include "Quarto/QuartoGame/QuartoBoard.h"
 
-
-#include "QuartoBoard.h"
 #include "Components/StaticMeshComponent.h"
-#include "QuartoBoardSlotComponent.h"
 #include "DrawDebugHelpers.h"
-#include "QuartoToken.h"
+#include "Quarto/QuartoGame/QuartoBoardSlotComponent.h"
+#include "Quarto/QuartoGame/QuartoToken.h"
 
 AQuartoBoard::AQuartoBoard()
 : m_lastFoundFreeSlot(nullptr)

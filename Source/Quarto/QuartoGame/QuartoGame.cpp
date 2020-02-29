@@ -1,16 +1,14 @@
-// Copyright 1998-2019 Epic Games, Inc. All Rights Reserved.
+#include "Quarto/QuartoGame/QuartoGame.h"
 
-#include "QuartoGame.h"
-#include "HeadMountedDisplayFunctionLibrary.h"
+#include <algorithm>
 #include "Camera/CameraComponent.h"
-#include "GameFramework/PlayerController.h"
 #include "Engine/World.h"
-#include "DrawDebugHelpers.h"
-#include "QuartoBoard.h"
-#include "QuartoBoardSlotComponent.h"
-#include "QuartoToken.h"
-#include "AI/MonteCarloTreeSearch.h"
-#include "QuartoGameCameraComponent.h"
+#include "GameFramework/PlayerController.h"
+#include "Quarto/QuartoGame/AI/MonteCarloTreeSearch.h"
+#include "Quarto/QuartoGame/QuartoBoard.h"
+#include "Quarto/QuartoGame/QuartoBoardSlotComponent.h"
+#include "Quarto/QuartoGame/QuartoGameCameraComponent.h"
+#include "Quarto/QuartoGame/QuartoToken.h"
 
 AQuartoGame::AQuartoGame(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)

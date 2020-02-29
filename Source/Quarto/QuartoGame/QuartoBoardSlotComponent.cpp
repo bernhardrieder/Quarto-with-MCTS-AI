@@ -1,6 +1,4 @@
-// F
-
-#include "QuartoBoardSlotComponent.h"
+#include "Quarto/QuartoGame/QuartoBoardSlotComponent.h"
 
 UQuartoBoardSlotComponent::UQuartoBoardSlotComponent()
 : m_coordinates(0,0)

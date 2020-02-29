@@ -1,9 +1,9 @@
 // Copyright 1998-2019 Epic Games, Inc. All Rights Reserved.
 #pragma once
 
-#include "Common/UnrealCommon.h"
 #include "GameFramework/Pawn.h"
-#include "QuartoCommon.h"
+#include "Quarto/Common/UnrealCommon.h"
+#include "Quarto/QuartoGame/QuartoCommon.h"
 #include "QuartoGame.generated.h"
 
 struct QuartoBoardData;

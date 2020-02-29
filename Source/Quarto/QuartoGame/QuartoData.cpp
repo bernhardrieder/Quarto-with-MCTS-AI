@@ -1,4 +1,4 @@
-#include "QuartoData.h"
+#include "Quarto/QuartoGame/QuartoData.h"
 
 TArray<QuartoTokenData> QuartoTokenData::s_possiblePermutations =
 {

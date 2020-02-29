@@ -1,10 +1,8 @@
 #pragma once
-#include "Common/UnrealCommon.h"
-#include "QuartoGame/QuartoData.h"
-#include <tuple>
-#include "Runnable.h"
-#include "ScopedEvent.h"
-#include "ThreadSafeBool.h"
+#include "HAL/Runnable.h"
+#include "HAL/ThreadSafeBool.h"
+#include "Quarto/Common/UnrealCommon.h"
+#include "Quarto/QuartoGame/QuartoData.h"
 
 namespace ai
 {

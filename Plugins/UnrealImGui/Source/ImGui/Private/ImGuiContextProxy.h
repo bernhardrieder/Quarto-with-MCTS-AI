@@ -3,53 +3,30 @@
 #pragma once
 
 #include "ImGuiDrawData.h"
-
+#include "ImGuiInputState.h"
 #include "Utilities/WorldContextIndex.h"
 
-#include <ICursor.h>
+#include <GenericPlatform/ICursor.h>
 
 #include <imgui.h>
 
 #include <string>
 
 
-class FImGuiInputState;
-
 // Represents a single ImGui context. All the context updates should be done through this proxy. During update it
 // broadcasts draw events to allow listeners draw their controls. After update it stores draw data.
 class FImGuiContextProxy
 {
-	class FImGuiContextPtr
-	{
-	public:
-
-		FImGuiContextPtr() = default;
-		FImGuiContextPtr(ImGuiContext* InContext) : Context(InContext) {}
-
-		FImGuiContextPtr(const FImGuiContextPtr&) = delete;
-		FImGuiContextPtr& operator=(const FImGuiContextPtr&) = delete;
-
-		FImGuiContextPtr(FImGuiContextPtr&& Other) : Context(Other.Context) { Other.Context = nullptr; }
-		FImGuiContextPtr& operator=(FImGuiContextPtr&& Other) { std::swap(Context, Other.Context); return *this; }
-
-		~FImGuiContextPtr();
-
-		ImGuiContext* Get() const { return Context; }
-
-	private:
-
-		ImGuiContext* Context = nullptr;
-	};
-
 public:
 
 	FImGuiContextProxy(const FString& Name, int32 InContextIndex, FSimpleMulticastDelegate* InSharedDrawEvent, ImFontAtlas* InFontAtlas);
+	~FImGuiContextProxy();
 
 	FImGuiContextProxy(const FImGuiContextProxy&) = delete;
 	FImGuiContextProxy& operator=(const FImGuiContextProxy&) = delete;
 
-	FImGuiContextProxy(FImGuiContextProxy&&) = default;
-	FImGuiContextProxy& operator=(FImGuiContextProxy&&) = default;
+	FImGuiContextProxy(FImGuiContextProxy&&) = delete;
+	FImGuiContextProxy& operator=(FImGuiContextProxy&&) = delete;
 
 	// Get the name of this context.
 	const FString& GetName() const { return Name; }
@@ -58,27 +35,25 @@ public:
 	const TArray<FImGuiDrawList>& GetDrawData() const { return DrawLists; }
 
 	// Get input state used by this context.
-	const FImGuiInputState* GetInputState() const { return InputState; }
-
-	// Set input state to be used by this context.
-	void SetInputState(const FImGuiInputState* SourceInputState) { InputState = SourceInputState; }
-
-	// If context is currently using input state to remove then remove that binding.
-	void RemoveInputState(const FImGuiInputState* InputStateToRemove) { if (InputState == InputStateToRemove) InputState = nullptr; }
+	FImGuiInputState& GetInputState() { return InputState; }
+	const FImGuiInputState& GetInputState() const { return InputState; }
 
 	// Is this context the current ImGui context.
-	bool IsCurrentContext() const { return ImGui::GetCurrentContext() == Context.Get(); }
+	bool IsCurrentContext() const { return ImGui::GetCurrentContext() == Context; }
 
 	// Set this context as current ImGui context.
-	void SetAsCurrent() { ImGui::SetCurrentContext(Context.Get()); }
+	void SetAsCurrent() { ImGui::SetCurrentContext(Context); }
 
-	// Context display size (read once per frame during context update and cached here for easy access).
+	// Context display size (read once per frame during context update).
 	const FVector2D& GetDisplaySize() const { return DisplaySize; }
 
-	// Whether this context has an active item (read once per frame during context update and cached here for easy access).
+	// Whether this context has an active item (read once per frame during context update).
 	bool HasActiveItem() const { return bHasActiveItem; }
 
-	// Cursor type desired by this context (this is updated during ImGui frame and cached here during context update, before it is reset).
+	// Whether this context has mouse hovering any window (read once per frame during context update).
+	bool IsMouseHoveringAnyWindow() const { return bIsMouseHoveringAnyWindow; }
+
+	// Cursor type desired by this context (updated once per frame during context update).
 	EMouseCursor::Type GetMouseCursor() const { return MouseCursor;  }
 
 	// Delegate called right before ending the frame to allows listeners draw their controls.
@@ -106,18 +81,19 @@ private:
 	void BroadcastWorldDebug();
 	void BroadcastMultiContextDebug();
 
-	FImGuiContextPtr Context;
+	ImGuiContext* Context;
 
 	FVector2D DisplaySize = FVector2D::ZeroVector;
 
 	EMouseCursor::Type MouseCursor = EMouseCursor::None;
 	bool bHasActiveItem = false;
+	bool bIsMouseHoveringAnyWindow = false;
 
 	bool bIsFrameStarted = false;
 	bool bIsDrawEarlyDebugCalled = false;
 	bool bIsDrawDebugCalled = false;
 
-	const FImGuiInputState* InputState = nullptr;
+	FImGuiInputState InputState;
 
 	TArray<FImGuiDrawList> DrawLists;
 

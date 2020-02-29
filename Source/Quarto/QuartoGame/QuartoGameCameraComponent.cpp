@@ -1,11 +1,9 @@
-// F
+#include "Quarto/QuartoGame/QuartoGameCameraComponent.h"
 
-
-#include "QuartoGameCameraComponent.h"
-#include "Kismet/KismetMathLibrary.h"
 #include "GameFramework/Actor.h"
 #include "GameFramework/PlayerController.h"
-#include "Engine/World.h"
+#include "Kismet/KismetMathLibrary.h"
+#include "Quarto/Common/UnrealCommon.h"
 
 void UQuartoGameCameraComponent::AttachToCamera(APlayerController* playerController)
 {

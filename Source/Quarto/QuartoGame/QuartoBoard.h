@@ -2,9 +2,9 @@
 
 #pragma once
 
-#include "Common/UnrealCommon.h"
 #include "GameFramework/Actor.h"
-#include "QuartoData.h"
+#include "Quarto/Common/UnrealCommon.h"
+#include "Quarto/QuartoGame/QuartoData.h"
 #include "QuartoBoard.generated.h"
 
 class AQuartoToken;

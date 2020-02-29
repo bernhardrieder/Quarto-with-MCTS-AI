@@ -1,11 +1,8 @@
-// F
+#include "Quarto/QuartoGame/QuartoToken.h"
 
-
-#include "QuartoToken.h"
 #include "Components/StaticMeshComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
-#include "QuartoBoardSlotComponent.h"
-
+#include "Quarto/QuartoGame/QuartoBoardSlotComponent.h"
 
 AQuartoToken::AQuartoToken()
 : m_meshComponent(nullptr)

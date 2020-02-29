@@ -1,6 +1,8 @@
-#include "MonteCarloTreeSearch.h"
-#include "PlatformProcess.h"
-#include "RunnableThread.h"
+#include "Quarto/QuartoGame/AI/MonteCarloTreeSearch.h"
+
+#include "HAL/PlatformProcess.h"
+#include "HAL/RunnableThread.h"
+#include "HAL/Event.h"
 
 using namespace ai::mcts;
 
