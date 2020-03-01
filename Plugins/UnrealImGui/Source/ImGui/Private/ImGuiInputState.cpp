@@ -9,53 +9,14 @@
 #include <type_traits>
 
 
-// If TCHAR is wider than ImWchar, enable or disable validation of input character before conversions.
-#define VALIDATE_INPUT_CHARACTERS 1
-
-#if VALIDATE_INPUT_CHARACTERS
-DEFINE_LOG_CATEGORY_STATIC(LogImGuiInput, Warning, All);
-#endif
-
-namespace
-{
-	template<typename T, std::enable_if_t<(sizeof(T) <= sizeof(ImWchar)), T>* = nullptr>
-	ImWchar CastInputChar(T Char)
-	{
-		return static_cast<ImWchar>(Char);
-	}
-
-	template<typename T, std::enable_if_t<!(sizeof(T) <= sizeof(ImWchar)), T>* = nullptr>
-	ImWchar CastInputChar(T Char)
-	{
-#if VALIDATE_INPUT_CHARACTERS
-		// We only need a runtime validation if TCHAR is wider than ImWchar.
-		// Signed and unsigned integral types with the same size as ImWchar should be safely converted. As long as the
-		// char value is in that range we can safely use it, otherwise we should log an error to notify about possible
-		// truncations.
-		static constexpr auto MinLimit = (std::numeric_limits<std::make_signed_t<ImWchar>>::min)();
-		static constexpr auto MaxLimit = (std::numeric_limits<std::make_unsigned_t<ImWchar>>::max)();
-		UE_CLOG(!(Char >= MinLimit && Char <= MaxLimit), LogImGuiInput, Error,
-			TEXT("TCHAR value '%c' (%#x) is out of range %d (%#x) to %u (%#x) that can be safely converted to ImWchar. ")
-			TEXT("If you wish to disable this validation, please set VALIDATE_INPUT_CHARACTERS in ImGuiInputState.cpp to 0."),
-			Char, Char, MinLimit, MinLimit, MaxLimit, MaxLimit);
-#endif
-
-		return static_cast<ImWchar>(Char);
-	}
-}
-
 FImGuiInputState::FImGuiInputState()
 {
-	ResetState();
+	Reset();
 }
 
 void FImGuiInputState::AddCharacter(TCHAR Char)
 {
-	if (InputCharactersNum < Utilities::GetArraySize(InputCharacters))
-	{
-		InputCharacters[InputCharactersNum++] = CastInputChar(Char);
-		InputCharacters[InputCharactersNum] = 0;
-	}
+	InputCharacters.Add(Char);
 }
 
 void FImGuiInputState::SetKeyDown(uint32 KeyIndex, bool bIsDown)
@@ -82,49 +43,21 @@ void FImGuiInputState::SetMouseDown(uint32 MouseIndex, bool bIsDown)
 	}
 }
 
-void FImGuiInputState::Reset(bool bKeyboard, bool bMouse, bool bNavigation)
-{
-	if (bKeyboard)
-	{
-		ClearCharacters();
-		ClearKeys();
-	}
-
-	if (bMouse)
-	{
-		ClearMouseButtons();
-		ClearMouseAnalogue();
-	}
-
-	if (bKeyboard && bMouse)
-	{
-		ClearModifierKeys();
-	}
-
-	if (bNavigation)
-	{
-		ClearNavigationInputs();
-	}
-}
-
 void FImGuiInputState::ClearUpdateState()
 {
-	if (InputCharactersNum > 0)
-	{
-		ClearCharacters();
-	}
+	ClearCharacters();
 
 	KeysUpdateRange.SetEmpty();
 	MouseButtonsUpdateRange.SetEmpty();
 
 	MouseWheelDelta = 0.f;
+
+	bTouchProcessed = bTouchDown;
 }
 
 void FImGuiInputState::ClearCharacters()
 {
-	using std::fill;
-	fill(InputCharacters, &InputCharacters[Utilities::GetArraySize(InputCharacters)], 0);
-	InputCharactersNum = 0;
+	InputCharacters.Empty();
 }
 
 void FImGuiInputState::ClearKeys()
@@ -132,7 +65,7 @@ void FImGuiInputState::ClearKeys()
 	using std::fill;
 	fill(KeysDown, &KeysDown[Utilities::GetArraySize(KeysDown)], false);
 
-	// Expand update range because keys array has been updated.
+	// Mark the whole array as dirty because potentially each entry could be affected.
 	KeysUpdateRange.SetFull();
 }
 
@@ -141,7 +74,7 @@ void FImGuiInputState::ClearMouseButtons()
 	using std::fill;
 	fill(MouseButtonsDown, &MouseButtonsDown[Utilities::GetArraySize(MouseButtonsDown)], false);
 
-	// Expand update range because mouse buttons array has been updated.
+	// Mark the whole array as dirty because potentially each entry could be affected.
 	MouseButtonsUpdateRange.SetFull();
 }
 

@@ -1,11 +1,9 @@
-// F
+#include "Quarto/QuartoGame/QuartoBoard.h"
 
-
-#include "QuartoBoard.h"
 #include "Components/StaticMeshComponent.h"
-#include "QuartoBoardSlotComponent.h"
 #include "DrawDebugHelpers.h"
-#include "QuartoToken.h"
+#include "Quarto/QuartoGame/QuartoBoardSlotComponent.h"
+#include "Quarto/QuartoGame/QuartoToken.h"
 
 AQuartoBoard::AQuartoBoard()
 : m_lastFoundFreeSlot(nullptr)
@@ -47,7 +45,7 @@ void AQuartoBoard::BeginPlay()
 	}
 	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("ERROR: Mismatch of number of sockets for the Quarto Game Board! Needs to be 16 slots."))
+		UE_LOG(LogTemp, Error, TEXT("ERROR: Mismatch of socket numbers for the Quarto Game Board! Needs to be 16 slots."))
 	}
 }
 

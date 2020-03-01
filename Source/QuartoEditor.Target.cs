@@ -6,8 +6,9 @@ using System.Collections.Generic;
 public class QuartoEditorTarget : TargetRules
 {
     public QuartoEditorTarget(TargetInfo Target) : base(Target)
-	{
-		Type = TargetType.Editor;
-		ExtraModuleNames.Add("Quarto");
-	}
+    {
+        Type = TargetType.Editor;
+        DefaultBuildSettings = BuildSettingsVersion.V2;
+        ExtraModuleNames.AddRange(new string[] { "Quarto" });
+    }
 }

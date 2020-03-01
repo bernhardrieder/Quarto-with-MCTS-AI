@@ -2,9 +2,8 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
 #include "Camera/CameraComponent.h"
-#include "Common/UnrealCommon.h"
+#include "Quarto/Common/UnrealCommon.h"
 #include "QuartoGameCameraComponent.generated.h"
 
 class AActor;

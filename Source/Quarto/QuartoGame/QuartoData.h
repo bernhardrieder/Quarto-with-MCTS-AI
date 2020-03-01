@@ -1,8 +1,7 @@
 #pragma once
 
-#include "Common/UnrealCommon.h"
-#include "QuartoCommon.h"
-#include <tuple>
+#include "Quarto/Common/UnrealCommon.h"
+#include "Quarto/QuartoGame/QuartoCommon.h"
 
 struct QuartoTokenData
 {

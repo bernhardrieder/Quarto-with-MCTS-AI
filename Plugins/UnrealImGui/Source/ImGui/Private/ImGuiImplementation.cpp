@@ -25,17 +25,16 @@ ImGuiContext** GImGuiContextPtrHandle = &GImGuiContextPtr;
 #endif // WITH_EDITOR
 
 #if PLATFORM_WINDOWS
-#include <AllowWindowsPlatformTypes.h>
+#include <Windows/AllowWindowsPlatformTypes.h>
 #endif // PLATFORM_WINDOWS
 
 #include "imgui.cpp"
 #include "imgui_demo.cpp"
 #include "imgui_draw.cpp"
 #include "imgui_widgets.cpp"
-#include "misc/stl/imgui_stl.cpp"
 
 #if PLATFORM_WINDOWS
-#include <HideWindowsPlatformTypes.h>
+#include <Windows/HideWindowsPlatformTypes.h>
 #endif // PLATFORM_WINDOWS
 
 #include "ImGuiInteroperability.h"

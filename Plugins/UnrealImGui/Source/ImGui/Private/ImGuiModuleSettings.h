@@ -17,19 +17,19 @@ struct FImGuiKeyInfo
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Input")
 	FKey Key;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Input")
 	ECheckBoxState Shift = ECheckBoxState::Undetermined;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Input")
 	ECheckBoxState Ctrl = ECheckBoxState::Undetermined;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Input")
 	ECheckBoxState Alt = ECheckBoxState::Undetermined;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Input")
 	ECheckBoxState Cmd = ECheckBoxState::Undetermined;
 
 	friend bool operator==(const FImGuiKeyInfo& Lhs, const FImGuiKeyInfo& Rhs)
@@ -82,6 +82,12 @@ protected:
 	// module properties interface.
 	UPROPERTY(EditAnywhere, config, Category = "Input")
 	bool bShareGamepadInput = false;
+
+	// Whether ImGui should share mouse input with game.
+	// This defines initial behaviour which can be later changed using 'ImGui.ToggleMouseInputSharing' command or
+	// module properties interface.
+	UPROPERTY(EditAnywhere, config, Category = "Input")
+	bool bShareMouseInput = false;
 
 	// If true, then in input mode ImGui will draw its own cursor in place of the hardware one.
 	// When disabled (default) there is a noticeable difference between cursor position seen by ImGui and position on
@@ -155,6 +161,7 @@ private:
 	void SetImGuiInputHandlerClass(const FStringClassReference& ClassReference);
 	void SetShareKeyboardInput(bool bShare);
 	void SetShareGamepadInput(bool bShare);
+	void SetShareMouseInput(bool bShare);
 	void SetUseSoftwareCursor(bool bUse);
 	void SetToggleInputKey(const FImGuiKeyInfo& KeyInfo);
 
@@ -169,5 +176,6 @@ private:
 	FImGuiKeyInfo ToggleInputKey;
 	bool bShareKeyboardInput = false;
 	bool bShareGamepadInput = false;
+	bool bShareMouseInput = false;
 	bool bUseSoftwareCursor = false;
 };
