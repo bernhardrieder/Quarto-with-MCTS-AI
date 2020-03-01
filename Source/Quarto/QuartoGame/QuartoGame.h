@@ -82,6 +82,9 @@ protected:
 	UPROPERTY(EditInstanceOnly, Category = "AI Settings", BlueprintReadWrite, meta = (DisplayName = "Max time to think about next opponent token in seconds"))
 	float m_maxAiThinkTimeForNextOpponentToken;
 
+	UPROPERTY(Category = "QuartoGame", BlueprintReadOnly)
+	bool m_isPlayed = false;
+	
 public:
 	UPROPERTY(BlueprintAssignable)
 	FOnGameStateChangedEvent OnGameStateChangedEvent;
@@ -143,8 +146,6 @@ private:
 	EQuartoPlayer m_players[QUARTO_NUM_OF_PLAYERS];
 	EQuartoPlayer m_currentPlayer;
 	ai::mcts::MonteCarloTreeSearch* m_mctsAi;
-
-	brBool m_isPlayed = false;
 	
 #ifdef DEBUG_BUILD
 	EQuartoGameState m_oldGameState;
