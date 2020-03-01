@@ -1,6 +1,4 @@
-// F
-
-#include "QuartoBoardSlotComponent.h"
+#include "Quarto/QuartoGame/QuartoBoardSlotComponent.h"
 
 UQuartoBoardSlotComponent::UQuartoBoardSlotComponent()
 : m_coordinates(0,0)
@@ -13,6 +11,7 @@ UQuartoBoardSlotComponent::UQuartoBoardSlotComponent()
 
 	UPrimitiveComponent::SetSimulatePhysics(false);
 	UPrimitiveComponent::SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+	UPrimitiveComponent::SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	USceneComponent::SetMobility(EComponentMobility::Stationary);
 
 #if UE_EDITOR

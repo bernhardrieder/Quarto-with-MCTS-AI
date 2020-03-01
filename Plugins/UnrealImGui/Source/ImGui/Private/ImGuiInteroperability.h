@@ -4,7 +4,7 @@
 
 #include "TextureManager.h"
 
-#include <ICursor.h>
+#include <GenericPlatform/ICursor.h>
 
 #include <imgui.h>
 
@@ -23,8 +23,6 @@ namespace ImGuiInterops
 		using FMouseButtonsArray = decltype(ImGuiIO::MouseDown);
 		using FKeysArray = decltype(ImGuiIO::KeysDown);
 		using FNavInputArray = decltype(ImGuiIO::NavInputs);
-
-		using FInputCharactersBuffer = decltype(ImGuiIO::InputCharacters);
 
 		using FKeyMap = decltype(ImGuiIO::KeyMap);
 	}

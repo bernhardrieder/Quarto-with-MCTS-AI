@@ -23,14 +23,15 @@ public class ImGui : ModuleRules
 		// Enable runtime loader, if you want this module to be automatically loaded in runtime builds (monolithic).
 		bool bEnableRuntimeLoader = true;
 
+		PCHUsage = PCHUsageMode.UseSharedPCHs;
+
 #if UE_4_21_OR_LATER
 		PrivatePCHHeaderFile = "Private/ImGuiPrivatePCH.h";
 #endif
 
 		PublicIncludePaths.AddRange(
 			new string[] {
-				Path.Combine(ModuleDirectory, "../ThirdParty/ImGuiLibrary/Include"),
-				Path.Combine(ModuleDirectory, "../ThirdParty/ImGuiLibrary/Include/misc/stl")
+				Path.Combine(ModuleDirectory, "../ThirdParty/ImGuiLibrary/Include")
 				// ... add public include paths required here ...
 			}
 			);

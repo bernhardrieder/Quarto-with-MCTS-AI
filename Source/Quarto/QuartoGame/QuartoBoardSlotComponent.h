@@ -2,9 +2,9 @@
 
 #pragma once
 
-#include "Common/UnrealCommon.h"
 #include "Components/CapsuleComponent.h"
-#include "QuartoBoard.h"
+#include "Quarto/Common/UnrealCommon.h"
+#include "Quarto/QuartoGame/QuartoBoard.h"
 #include "QuartoBoardSlotComponent.generated.h"
 
 UCLASS(Blueprintable, ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )

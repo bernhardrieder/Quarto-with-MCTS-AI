@@ -6,8 +6,9 @@ using System.Collections.Generic;
 public class QuartoTarget : TargetRules
 {
     public QuartoTarget(TargetInfo Target) : base(Target)
-	{
-		Type = TargetType.Game;
-		ExtraModuleNames.Add("Quarto");
-	}
+    {
+        Type = TargetType.Game;
+        DefaultBuildSettings = BuildSettingsVersion.V2;
+        ExtraModuleNames.AddRange(new string[] { "Quarto" });
+    }
 }
