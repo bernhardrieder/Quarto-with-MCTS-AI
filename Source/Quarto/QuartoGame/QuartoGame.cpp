@@ -29,7 +29,7 @@ AQuartoGame::AQuartoGame(const FObjectInitializer& ObjectInitializer)
 	RootComponent = CreateDefaultSubobject<USceneComponent>(FName("Root"));
 
 	m_gameCamera = CreateDefaultSubobject<UQuartoGameCameraComponent>(FName("Game Camera"));
-	m_gameCamera->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
+	m_gameCamera->SetupAttachment(RootComponent);
 }
 
 void AQuartoGame::BeginPlay()

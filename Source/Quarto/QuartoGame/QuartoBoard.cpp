@@ -45,7 +45,7 @@ void AQuartoBoard::BeginPlay()
 	}
 	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("ERROR: Mismatch of number of sockets for the Quarto Game Board! Needs to be 16 slots."))
+		UE_LOG(LogTemp, Error, TEXT("ERROR: Mismatch of socket numbers for the Quarto Game Board! Needs to be 16 slots."))
 	}
 }
 
